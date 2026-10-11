@@ -28,7 +28,7 @@ class CartaConselheiroAberto extends Carta {
 	}
 
 	@Override
-	String getDescricao() {
+		 getDescricao() {
 		return tipo.getDescricao();
 	}
 }

@@ -1,6 +1,6 @@
 package model;
 
-/** Tipos de peça de tributo que um jogador pode possuir (pág. 8). */
+/** Tipos de peça de tributo que um jogador pode possuir. */
 enum TipoTributo {
 	ESPADA,  // permite atacar cidades
 	YURT,    // permite colocar yurts no tabuleiro
