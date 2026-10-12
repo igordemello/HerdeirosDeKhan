@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Random;
 
 /*
@@ -157,6 +159,33 @@ class Tabuleiro {
 	}
 
 	/**
+	 * Menor número de rotas entre a parada e Karakorum (busca em largura).
+	 * Usado no desempate do vencedor (pág. 16).
+	 *
+	 * @return a distância, ou {@code Integer.MAX_VALUE} se não houver caminho
+	 */
+	int distanciaAteKarakorum(String idParada) {
+		Parada alvo = buscarParada(idParada);
+		Map<Parada, Integer> distancia = new HashMap<Parada, Integer>();
+		Queue<Parada> fila = new LinkedList<Parada>();
+		distancia.put(karakorum, 0);
+		fila.add(karakorum);
+		while (!fila.isEmpty()) {
+			Parada atual = fila.remove();
+			if (atual == alvo) {
+				return distancia.get(atual);
+			}
+			for (Parada vizinha : atual.getVizinhas()) {
+				if (!distancia.containsKey(vizinha)) {
+					distancia.put(vizinha, distancia.get(atual) + 1);
+					fila.add(vizinha);
+				}
+			}
+		}
+		return Integer.MAX_VALUE;
+	}
+
+	/**
 	 * Yurts do jogador numa região: os das paradas da região mais o yurt no
 	 * meio das cidades que ele conquistou ali. O yurt de Tolui em Karakorum
 	 * não conta para nenhuma região (pág. 20).
@@ -252,6 +281,46 @@ class Tabuleiro {
 		Parada parada = buscarParada(idParada);
 		parada.adicionarPeao(peao);
 		posicaoDosPeoes.put(peao, parada);
+	}
+
+	/**
+	 * Move um peão pelo caminho dado (pág. 7). Cada passo vai para uma parada
+	 * vizinha e gasta 1 movimento, mas pular um yurt do próprio jogador não
+	 * gasta movimento. O peão pode passar por paradas ocupadas; só a parada
+	 * onde ele termina precisa ter lugar.
+	 *
+	 * @param caminho    paradas percorridas, sem a de origem; a última é o destino
+	 * @param movimentos quantos movimentos (cavalos) o jogador tem neste turno
+	 * @return {@code false} se o caminho não respeita as regras (nada é alterado)
+	 */
+	boolean moverPeao(Peao peao, List<String> caminho, int movimentos) {
+		Parada origem = posicaoDosPeoes.get(peao);
+		if (origem == null) {
+			throw new IllegalStateException(peao + " não está no tabuleiro");
+		}
+		if (caminho == null || caminho.isEmpty()) {
+			throw new IllegalArgumentException("Caminho vazio");
+		}
+		Parada atual = origem;
+		int gastos = 0;
+		for (int i = 0; i < caminho.size(); i++) {
+			Parada proxima = buscarParada(caminho.get(i));
+			if (!atual.ehVizinhaDe(proxima.getId())) {
+				return false;
+			}
+			boolean ehDestino = (i == caminho.size() - 1);
+			if (ehDestino || !proxima.temYurtDe(peao.getCor())) {
+				gastos++;
+			}
+			atual = proxima;
+		}
+		if (gastos > movimentos || !atual.podeReceberPeao()) {
+			return false;
+		}
+		origem.removerPeao(peao);
+		atual.adicionarPeao(peao);
+		posicaoDosPeoes.put(peao, atual);
+		return true;
 	}
 
 	/**
