@@ -21,6 +21,11 @@ public class Jogo {
 	private final Tabuleiro tabuleiro;
 	private final DistribuidorCartas distribuidor;
 
+	/** Coluna ativada pelo jogador da vez neste turno ({@code null} se nenhuma). */
+	private ColunaJogador colunaAtivadaNaVez = null;
+	/** Movimentos (cavalos) que o jogador da vez tem neste turno. */
+	private int movimentosDaVez = 0;
+
 	/**
 	 * Cria e prepara uma partida: jogadores, tabuleiro e cartas.
 	 *
@@ -47,7 +52,108 @@ public class Jogo {
 
 	/** Passa a vez e retorna a cor do próximo jogador. */
 	public String passarVez() {
+		colunaAtivadaNaVez = null;
+		movimentosDaVez = 0;
 		return gerenciador.passarVez().getCor().name();
+	}
+
+	// ------------------------------------------------- tabuleiro do jogador
+
+	/** Nomes das colunas do tabuleiro do jogador, da esquerda para a direita. */
+	public List<String> getColunas() {
+		List<String> nomes = new ArrayList<String>();
+		for (ColunaJogador c : ColunaJogador.values()) {
+			nomes.add(c.name());
+		}
+		return nomes;
+	}
+
+	/** Herdeiro do jogador da cor dada (ex.: "Tolui"); usado pela View para achar a imagem. */
+	public String getHerdeiro(String cor) {
+		return jogador(cor).getHerdeiro().getNome();
+	}
+
+	/** Se a coluna do jogador tem uma ficha de ativação colocada. */
+	public boolean colunaOcupada(String cor, String coluna) {
+		return jogador(cor).getTabuleiro().colunaOcupada(coluna(coluna));
+	}
+
+	public int getFichasAtivacaoDisponiveis(String cor) {
+		return jogador(cor).getFichasAtivacaoDisponiveis();
+	}
+
+	/** Cavalos da coluna (base + melhorias) = movimentos se ela for ativada. */
+	public int getCavalosDaColuna(String cor, String coluna) {
+		return jogador(cor).getTabuleiro().getCavalos(coluna(coluna));
+	}
+
+	/** Punhos da coluna (base + melhorias) = peças de tributo que podem ser pegas. */
+	public int getPunhosDaColuna(String cor, String coluna) {
+		return jogador(cor).getTabuleiro().getPunhos(coluna(coluna));
+	}
+
+	/** Melhorias da coluna, da mais baixa para a mais alta (ex.: "DOIS_CAVALOS"). */
+	public List<String> getMelhoriasDaColuna(String cor, String coluna) {
+		List<String> nomes = new ArrayList<String>();
+		for (TipoMelhoria m : jogador(cor).getTabuleiro().getMelhorias(coluna(coluna))) {
+			nomes.add(m.name());
+		}
+		return nomes;
+	}
+
+	/** Se a coluna tem o ícone do Khan (usar o Khan é obrigatório). */
+	public boolean colunaUsaKhan(String coluna) {
+		return coluna(coluna).usaKhan();
+	}
+
+	/**
+	 * Se o jogador da vez pode ativar a coluna agora: ele ainda não ativou
+	 * nenhuma coluna neste turno e a coluna está livre.
+	 */
+	public boolean podeAtivarColuna(String coluna) {
+		return colunaAtivadaNaVez == null
+				&& gerenciador.getJogadorDaVez().getTabuleiro().podeAtivar(coluna(coluna));
+	}
+
+	/**
+	 * O jogador da vez coloca uma ficha de ativação na coluna (pág. 6). O
+	 * número de movimentos do turno passa a ser o número de cavalos da
+	 * coluna. A coluna branca devolve todas as fichas (pág. 9).
+	 *
+	 * @return {@code false} se ele já ativou uma coluna neste turno ou se a
+	 *         coluna está ocupada (nada é alterado)
+	 */
+	public boolean ativarColuna(String coluna) {
+		ColunaJogador c = coluna(coluna);
+		if (!podeAtivarColuna(coluna)) {
+			return false;
+		}
+		TabuleiroJogador tab = gerenciador.getJogadorDaVez().getTabuleiro();
+		movimentosDaVez = tab.getCavalos(c); // conta antes de recuperar as fichas
+		tab.ativar(c);
+		colunaAtivadaNaVez = c;
+		return true;
+	}
+
+	/** Coluna ativada neste turno, ou {@code null} se nenhuma foi ativada. */
+	public String getColunaAtivadaNaVez() {
+		return colunaAtivadaNaVez == null ? null : colunaAtivadaNaVez.name();
+	}
+
+	/** Movimentos do jogador da vez neste turno (o equivalente aos dados). */
+	public int getMovimentosDaVez() {
+		return movimentosDaVez;
+	}
+
+	/**
+	 * Define à mão os movimentos do turno, para testes (como escolher o valor
+	 * dos dados no enunciado).
+	 */
+	public void definirMovimentosDaVez(int movimentos) {
+		if (movimentos < 0) {
+			throw new IllegalArgumentException("Movimentos negativos: " + movimentos);
+		}
+		movimentosDaVez = movimentos;
 	}
 
 	// ------------------------------------------------------------ movimento
@@ -135,6 +241,21 @@ public class Jogo {
 			menor = Math.min(menor, tabuleiro.distanciaAteKarakorum(parada.getId()));
 		}
 		return menor;
+	}
+
+	private Jogador jogador(String nomeCor) {
+		Jogador j = gerenciador.getJogador(cor(nomeCor));
+		if (j == null) {
+			throw new IllegalArgumentException("A cor " + nomeCor + " não está na partida");
+		}
+		return j;
+	}
+
+	private static ColunaJogador coluna(String nome) {
+		if (nome == null) {
+			throw new IllegalArgumentException("Coluna nula");
+		}
+		return ColunaJogador.valueOf(nome); // lança IllegalArgumentException se não existir
 	}
 
 	private static Cor cor(String nome) {

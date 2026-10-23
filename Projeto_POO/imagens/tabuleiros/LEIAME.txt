@@ -1,0 +1,12 @@
+Coloque aqui as imagens dos tabuleiros de jogador disponibilizadas no EAD,
+com o nome do herdeiro em minúsculas:
+
+  altani.png   chagatai.png   jochi.png   ogedei.png   tolui.png
+
+(.jpg, .jpeg e .gif também funcionam.)
+
+Enquanto as imagens não estiverem aqui, a View desenha um tabuleiro
+provisório com Java2D. Se as colunas da imagem real não ficarem alinhadas
+com as fichas desenhadas, ajuste as constantes de geometria em
+view/ImagensTabuleiroJogador.java (X_COLUNA, LARGURA_COLUNA, Y_ESPACO,
+Y_BASE, ALTURA_LINHA).

@@ -16,14 +16,15 @@ import java.util.Map;
  */
 class Jogador {
 	static final int YURTS_INICIAIS = 12;
-	static final int FICHAS_ATIVACAO_INICIAIS = 4;
+	static final int FICHAS_ATIVACAO_INICIAIS = TabuleiroJogador.FICHAS_ATIVACAO;
 	static final int CARTAS_SECRETAS_INICIAIS = 2;
 
 	private final Cor cor;
 	private final Herdeiro herdeiro;
 
 	private int yurtsDisponiveis = YURTS_INICIAIS;
-	private int fichasAtivacaoDisponiveis = FICHAS_ATIVACAO_INICIAIS;
+	/** Tabuleiro do jogador: colunas, fichas de ativação e melhorias. */
+	private final TabuleiroJogador tabuleiro = new TabuleiroJogador();
 	private int votos = 0;
 
 	private final Map<TipoTributo, Integer> tributos = new EnumMap<TipoTributo, Integer>(TipoTributo.class);
@@ -106,23 +107,15 @@ class Jogador {
 		return true;
 	}
 
-	// ----------------------------------------------------- fichas de ativação
+	// ------------------------------------------------- tabuleiro do jogador
 
+	TabuleiroJogador getTabuleiro() {
+		return tabuleiro;
+	}
+
+	/** Fichas de ativação que ainda não estão em nenhuma coluna. */
 	int getFichasAtivacaoDisponiveis() {
-		return fichasAtivacaoDisponiveis;
-	}
-
-	boolean usarFichaAtivacao() {
-		if (fichasAtivacaoDisponiveis == 0) {
-			return false;
-		}
-		fichasAtivacaoDisponiveis--;
-		return true;
-	}
-
-	/** Coluna branca: recupera todas as fichas de ativação. */
-	void recuperarFichasAtivacao() {
-		fichasAtivacaoDisponiveis = FICHAS_ATIVACAO_INICIAIS;
+		return tabuleiro.getFichasDisponiveis();
 	}
 
 	// ------------------------------------------------------------------- votos
