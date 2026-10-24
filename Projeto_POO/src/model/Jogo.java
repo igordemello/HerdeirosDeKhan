@@ -170,6 +170,61 @@ public class Jogo {
 		return tabuleiro.moverPeao(new Peao(cor(cor), numeroPeao), caminho, movimentos);
 	}
 
+	/**
+	 * Move um peão até a parada clicada; o caminho é procurado pelo Model
+	 * (ver {@link Tabuleiro#moverPeaoAte}).
+	 *
+	 * @param idDestino  id da parada clicada (ex.: "R05", "KARAKORUM")
+	 * @param movimentos movimentos (cavalos) disponíveis
+	 * @return ids das paradas em que o peão esteve, da origem ao destino (sem
+	 *         os yurts próprios pulados); lista vazia se o movimento não é
+	 *         possível, e nesse caso nada muda
+	 */
+	public List<String> moverPeaoAte(String cor, int numeroPeao, String idDestino, int movimentos) {
+		return tabuleiro.moverPeaoAte(new Peao(cor(cor), numeroPeao), idDestino, movimentos);
+	}
+
+	/** Se o peão consegue chegar à parada com esses movimentos (nada muda). */
+	public boolean podeMoverPeaoAte(String cor, int numeroPeao, String idDestino, int movimentos) {
+		return tabuleiro.podeMoverPeaoAte(new Peao(cor(cor), numeroPeao), idDestino, movimentos);
+	}
+
+	/**
+	 * Move um peão do jogador da vez até a parada clicada, usando os
+	 * movimentos do turno ({@link #getMovimentosDaVez()}). Os movimentos
+	 * gastos são descontados: quem visitou n paradas além da origem gastou n.
+	 *
+	 * @return ids das paradas em que o peão esteve; lista vazia se não é possível
+	 */
+	public List<String> moverPeaoDaVezAte(int numeroPeao, String idDestino) {
+		Cor corDaVez = gerenciador.getJogadorDaVez().getCor();
+		List<String> visitadas = tabuleiro.moverPeaoAte(new Peao(corDaVez, numeroPeao), idDestino, movimentosDaVez);
+		if (!visitadas.isEmpty()) {
+			movimentosDaVez -= visitadas.size() - 1;
+		}
+		return visitadas;
+	}
+
+	/** Id da parada onde está o peão (para a View desenhá-lo), ou {@code null}. */
+	public String getParadaDoPeao(String cor, int numeroPeao) {
+		Parada parada = tabuleiro.getParadaDoPeao(new Peao(cor(cor), numeroPeao));
+		return parada == null ? null : parada.getId();
+	}
+
+	/** Quantos peões o jogador tem (Altani tem 2). */
+	public int getNumeroDePeoes(String cor) {
+		return cor(cor).getHerdeiro().getNumeroDePeoes();
+	}
+
+	/** Ids de todas as paradas do mapa. */
+	public List<String> getParadas() {
+		List<String> ids = new ArrayList<String>();
+		for (Parada parada : tabuleiro.getParadas()) {
+			ids.add(parada.getId());
+		}
+		return ids;
+	}
+
 	// ------------------------------------------------------- fim e vencedor
 
 	/**

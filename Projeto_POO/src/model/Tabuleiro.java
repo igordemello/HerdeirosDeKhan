@@ -1,8 +1,10 @@
 package model;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -324,6 +326,46 @@ class Tabuleiro {
 	}
 
 	/**
+	 * Move o peão até a parada clicada pelo jogador (pág. 7). Como o jogador
+	 * indica só o destino, o caminho é procurado aqui, respeitando as regras:
+	 * cada passo vai para uma parada vizinha; passar por um yurt próprio não
+	 * gasta movimento; o peão pode passar por paradas ocupadas, mas só pode
+	 * terminar numa parada com lugar (dupla e Karakorum cabem mais peões); o
+	 * total gasto não passa de {@code movimentos}. Entre os caminhos válidos é
+	 * usado o que gasta menos movimentos.
+	 *
+	 * @param idDestino  parada clicada
+	 * @param movimentos quantos movimentos (cavalos) o jogador tem neste turno
+	 * @return as paradas em que o peão esteve, da origem ao destino, para pegar
+	 *         tributos e construir yurts depois. As paradas com yurt próprio
+	 *         que ele pulou não entram, pois ele nunca esteve nelas (pág. 8).
+	 *         Lista vazia se o movimento não for possível (nada é alterado).
+	 */
+	List<String> moverPeaoAte(Peao peao, String idDestino, int movimentos) {
+		List<Parada> caminho = buscarCaminho(peao, idDestino, movimentos);
+		if (caminho == null) {
+			return Collections.emptyList();
+		}
+		Parada origem = caminho.get(0);
+		Parada destino = caminho.get(caminho.size() - 1);
+		List<String> visitadas = new ArrayList<String>();
+		for (Parada parada : caminho) {
+			if (parada == origem || parada == destino || !parada.temYurtDe(peao.getCor())) {
+				visitadas.add(parada.getId());
+			}
+		}
+		origem.removerPeao(peao);
+		destino.adicionarPeao(peao);
+		posicaoDosPeoes.put(peao, destino);
+		return Collections.unmodifiableList(visitadas);
+	}
+
+	/** Se o peão consegue chegar à parada com os movimentos dados (nada é alterado). */
+	boolean podeMoverPeaoAte(Peao peao, String idDestino, int movimentos) {
+		return buscarCaminho(peao, idDestino, movimentos) != null;
+	}
+
+	/**
 	 * Constrói um yurt do jogador na parada, tirando-o da reserva dele.
 	 * O pagamento da peça de tributo de yurt e a verificação de que o
 	 * jogador passou pela parada ficam a cargo de quem chama.
@@ -417,6 +459,84 @@ class Tabuleiro {
 		Cidade cidade = pilhaDeCidades.remove(pilhaDeCidades.size() - 1);
 		cidade.revelar();
 		return cidade;
+	}
+
+	/**
+	 * Caminho que gasta menos movimentos da parada do peão até o destino.
+	 * É uma busca em largura "0-1": entrar numa parada intermediária com yurt
+	 * próprio custa 0 e nas demais custa 1, por isso as de custo 0 entram no
+	 * início da fila e as de custo 1 no fim. Chegar ao destino sempre custa 1.
+	 *
+	 * @return as paradas do caminho (origem ... destino), ou {@code null} se o
+	 *         destino não pode ser alcançado com esses movimentos
+	 */
+	private List<Parada> buscarCaminho(Peao peao, String idDestino, int movimentos) {
+		Parada origem = posicaoDosPeoes.get(peao);
+		if (origem == null) {
+			throw new IllegalStateException(peao + " não está no tabuleiro");
+		}
+		Parada destino = buscarParada(idDestino);
+		if (destino == origem || movimentos <= 0 || !destino.podeReceberPeao()) {
+			return null;
+		}
+		Map<Parada, Integer> custo = new HashMap<Parada, Integer>();
+		Map<Parada, Parada> anterior = new HashMap<Parada, Parada>();
+		Deque<Parada> fila = new ArrayDeque<Parada>();
+		custo.put(origem, 0);
+		fila.add(origem);
+		int melhor = Integer.MAX_VALUE;
+		Parada antesDoDestino = null;
+		while (!fila.isEmpty()) {
+			Parada atual = fila.pollFirst();
+			int gasto = custo.get(atual);
+			if (gasto >= movimentos) {
+				continue; // daqui o destino custaria mais do que o jogador tem
+			}
+			for (Parada vizinha : vizinhasEmOrdem(atual)) {
+				if (vizinha == destino) {
+					if (gasto + 1 < melhor) {
+						melhor = gasto + 1;
+						antesDoDestino = atual;
+					}
+					continue;
+				}
+				int passo = vizinha.temYurtDe(peao.getCor()) ? 0 : 1;
+				Integer conhecido = custo.get(vizinha);
+				if (conhecido == null || gasto + passo < conhecido) {
+					custo.put(vizinha, gasto + passo);
+					anterior.put(vizinha, atual);
+					if (passo == 0) {
+						fila.addFirst(vizinha);
+					} else {
+						fila.addLast(vizinha);
+					}
+				}
+			}
+		}
+		if (antesDoDestino == null || melhor > movimentos) {
+			return null;
+		}
+		List<Parada> caminho = new ArrayList<Parada>();
+		caminho.add(destino);
+		for (Parada p = antesDoDestino; p != null; p = anterior.get(p)) {
+			caminho.add(p);
+		}
+		Collections.reverse(caminho);
+		return caminho;
+	}
+
+	/** Vizinhas em ordem de id, para que o caminho escolhido seja sempre o mesmo. */
+	private List<Parada> vizinhasEmOrdem(Parada parada) {
+		List<String> ids = new ArrayList<String>();
+		for (Parada vizinha : parada.getVizinhas()) {
+			ids.add(vizinha.getId());
+		}
+		Collections.sort(ids);
+		List<Parada> vizinhas = new ArrayList<Parada>();
+		for (String id : ids) {
+			vizinhas.add(paradas.get(id));
+		}
+		return vizinhas;
 	}
 
 	private Parada buscarParada(String id) {
