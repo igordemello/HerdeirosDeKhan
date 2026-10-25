@@ -88,7 +88,11 @@ public class PainelLateral extends JPanel {
 	private static final Map<String, String> NOMES_MELHORIAS = new HashMap<String, String>();
 	static {
 		NOMES_MELHORIAS.put("MOEDA_VIRTUAL", "moeda\nvirtual");
-		NOMES_MELHORIAS.put("TESOURO_VIRTUAL", "tesouro\nvirtual");
+		NOMES_MELHORIAS.put("TESOURO_VIRTUAL_BOI", "boi\nvirtual");
+		NOMES_MELHORIAS.put("TESOURO_VIRTUAL_ESPECIARIA", "especiaria\nvirtual");
+		NOMES_MELHORIAS.put("TESOURO_VIRTUAL_FERRO", "ferro\nvirtual");
+		NOMES_MELHORIAS.put("TESOURO_VIRTUAL_PELE", "pele\nvirtual");
+		NOMES_MELHORIAS.put("TESOURO_VIRTUAL_SEDA", "seda\nvirtual");
 		NOMES_MELHORIAS.put("ESPADA_VIRTUAL", "espada\nvirtual");
 		NOMES_MELHORIAS.put("YURT_VIRTUAL", "yurt\nvirtual");
 		NOMES_MELHORIAS.put("PUNHO", "+1 punho");
@@ -241,10 +245,10 @@ public class PainelLateral extends JPanel {
 			if (punhos > 0) {
 				sb.append('\n').append(punhos).append(punhos == 1 ? " punho" : " punhos");
 			}
-			if ("AMARELA".equals(c)) {
+			if (jogo.getMoedasVirtuaisDaColuna(cor, c) > 0) {
 				sb.append("\nmoeda virt.");
 			}
-			if (jogo.colunaUsaKhan(c)) {
+			if (jogo.colunaUsaKhan(cor, c)) {
 				sb.append("\nKhan");
 			}
 			if ("BRANCA".equals(c)) {
@@ -275,12 +279,22 @@ public class PainelLateral extends JPanel {
 		return n;
 	}
 
-	/** Desenha as melhorias de cada coluna sobre os espaços do tabuleiro. */
+	/**
+	 * Desenha as peças de melhoria de cada coluna sobre os espaços do
+	 * tabuleiro, de baixo para cima, com a imagem da peça (pelo id dado pelo
+	 * Model, ex.: "CAV-V"). Sem a imagem, desenha um cartão com o nome.
+	 */
 	private void desenharMelhorias(Graphics2D g2, String cor) {
 		for (int i = 0; i < colunas.size(); i++) {
 			List<String> melhorias = jogo.getMelhoriasDaColuna(cor, colunas.get(i));
+			List<String> ids = jogo.getIdsDasMelhoriasDaColuna(cor, colunas.get(i));
 			for (int j = 0; j < melhorias.size() && j < ImagensTabuleiroJogador.Y_ESPACO.length; j++) {
 				Rectangle r = celula(i, ImagensTabuleiroJogador.Y_ESPACO[j]);
+				Image peca = ImagensTabuleiroJogador.getMelhoria(ids.get(j));
+				if (peca != null) {
+					g2.drawImage(peca, r.x, r.y, r.width, r.height, this);
+					continue;
+				}
 				g2.setColor(new Color(255, 248, 225));
 				g2.fill(new RoundRectangle2D.Double(r.x, r.y, r.width, r.height, 8, 8));
 				g2.setColor(new Color(120, 90, 40));
@@ -313,16 +327,32 @@ public class PainelLateral extends JPanel {
 			}
 
 			if (jogo.colunaOcupada(cor, coluna)) {
-				double d = Math.min(base.width, base.height) * 0.8;
+				double d = Math.min(base.width, base.height) * 0.85;
 				double cx = base.getCenterX() - d / 2;
 				double cy = base.getCenterY() - d / 2;
+				Ellipse2D circulo = new Ellipse2D.Double(cx, cy, d, d);
 				g2.setColor(new Color(0, 0, 0, 90));
 				g2.fill(new Ellipse2D.Double(cx + 2, cy + 3, d, d));
-				g2.setColor(corJogador);
-				g2.fill(new Ellipse2D.Double(cx, cy, d, d));
-				g2.setStroke(new BasicStroke(2.5f));
-				g2.setColor(Color.WHITE);
-				g2.draw(new Ellipse2D.Double(cx, cy, d, d));
+
+				Image ficha = ImagensTabuleiroJogador.getFicha(cor);
+				if (ficha != null) {
+					// a imagem da ficha é quadrada com fundo branco: recorta o círculo
+					java.awt.Shape recorteAnterior = g2.getClip();
+					g2.clip(circulo);
+					double margem = d * 0.04; // descarta a borda branca da foto
+					g2.drawImage(ficha, (int) Math.round(cx - margem), (int) Math.round(cy - margem),
+							(int) Math.round(d + 2 * margem), (int) Math.round(d + 2 * margem), this);
+					g2.setClip(recorteAnterior);
+					g2.setStroke(new BasicStroke(1.5f));
+					g2.setColor(new Color(60, 60, 60));
+					g2.draw(circulo);
+				} else {
+					g2.setColor(corJogador);
+					g2.fill(circulo);
+					g2.setStroke(new BasicStroke(2.5f));
+					g2.setColor(Color.WHITE);
+					g2.draw(circulo);
+				}
 			}
 		}
 	}

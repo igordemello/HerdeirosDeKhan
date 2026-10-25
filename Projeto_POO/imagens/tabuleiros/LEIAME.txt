@@ -1,12 +1,15 @@
-Coloque aqui as imagens dos tabuleiros de jogador disponibilizadas no EAD,
-com o nome do herdeiro em minúsculas:
+Imagens usadas na área lateral (tabuleiro do jogador da vez), tiradas dos
+arquivos do EAD (cartelas.zip e cartoes.zip):
 
-  altani.png   chagatai.png   jochi.png   ogedei.png   tolui.png
+imagens/tabuleiros/  tabuleiro de cada herdeiro (cartela1..5, reduzidas para
+                     1600 px de largura): altani, jochi, chagatai, tolui, ogedei
+imagens/fichas/      fichas de ativação de cada cor (cartoes4): azul, amarelo,
+                     vermelho, verde e roxo (a ficha cinza/preta do jogo é usada
+                     para a cor ROXO do Model)
+imagens/melhorias/   peças de melhoria (cartoes1), com o mesmo nome do id da
+                     peça no Model: sigla do tipo + cor (A = amarela,
+                     R = vermelha, V = verde). Ex.: CAV-V = dois cavalos verde.
 
-(.jpg, .jpeg e .gif também funcionam.)
-
-Enquanto as imagens não estiverem aqui, a View desenha um tabuleiro
-provisório com Java2D. Se as colunas da imagem real não ficarem alinhadas
-com as fichas desenhadas, ajuste as constantes de geometria em
+As posições das colunas dentro do tabuleiro ficam em
 view/ImagensTabuleiroJogador.java (X_COLUNA, LARGURA_COLUNA, Y_ESPACO,
 Y_BASE, ALTURA_LINHA).

@@ -19,14 +19,20 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 /**
- * Imagens dos tabuleiros de jogador, uma por herdeiro, guardadas num HashMap
- * para que a View as recupere em tempo constante.
- *
- * A classe procura primeiro as imagens disponibilizadas no EAD, na pasta
- * {@code imagens/tabuleiros/} do projeto, com o nome do herdeiro em minúsculas
- * (ex.: {@code imagens/tabuleiros/tolui.png}). Se não encontrar, monta uma
- * imagem provisória do tabuleiro com Java2D, para que o jogo funcione
- * mesmo sem os arquivos. Em ambos os casos a View exibe a imagem com
+ * Imagens usadas na área lateral, guardadas em HashMaps para que a View as
+ * recupere em tempo constante:
+ * <ul>
+ * <li>tabuleiros de jogador, um por herdeiro, em {@code imagens/tabuleiros/}
+ * (ex.: {@code tolui.jpg});</li>
+ * <li>fichas de ativação, uma por cor de jogador, em {@code imagens/fichas/}
+ * (ex.: {@code azul.jpg});</li>
+ * <li>peças de melhoria, pelo id da peça no Model, em
+ * {@code imagens/melhorias/} (ex.: {@code CAV-V.jpg}).</li>
+ * </ul>
+ * As imagens são as disponibilizadas no EAD. Se o tabuleiro de um herdeiro
+ * não for encontrado, a classe monta uma imagem provisória com Java2D; se uma
+ * ficha ou melhoria não for encontrada, devolve {@code null} e o painel
+ * desenha uma forma simples no lugar. A View exibe tudo com
  * {@code drawImage()}.
  *
  * As constantes de geometria dizem onde ficam as colunas dentro da imagem,
@@ -34,29 +40,36 @@ import javax.imageio.ImageIO;
  * imagens do EAD tiverem outro enquadramento, basta ajustá-las.
  */
 final class ImagensTabuleiroJogador {
-	/** Pasta das imagens, relativa à pasta do projeto no Eclipse. */
+	/** Pastas das imagens, relativas à pasta do projeto no Eclipse. */
 	static final String PASTA = "imagens/tabuleiros/";
+	static final String PASTA_FICHAS = "imagens/fichas/";
+	static final String PASTA_MELHORIAS = "imagens/melhorias/";
 	private static final String[] EXTENSOES = { ".png", ".jpg", ".jpeg", ".gif" };
 
 	/** Proporção largura/altura do tabuleiro do jogador. */
-	static final double PROPORCAO = 1510.0 / 820.0;
+	static final double PROPORCAO = 1600.0 / 873.0;
 
 	/** Início (x) de cada coluna, em fração da largura da imagem. */
-	static final double[] X_COLUNA = { 0.268, 0.440, 0.613, 0.805 };
+	static final double[] X_COLUNA = { 0.2625, 0.439, 0.616, 0.811 };
 	/** Largura de uma coluna, em fração da largura da imagem. */
-	static final double LARGURA_COLUNA = 0.149;
+	static final double LARGURA_COLUNA = 0.150;
 	/** Topo (y) dos espaços de melhoria, de baixo (índice 0) para cima. */
-	static final double[] Y_ESPACO = { 0.580, 0.415, 0.250, 0.091 };
+	static final double[] Y_ESPACO = { 0.590, 0.422, 0.258, 0.094 };
 	/** Topo (y) da linha de ações iniciais (base das colunas). */
-	static final double Y_BASE = 0.744;
+	static final double Y_BASE = 0.759;
 	/** Altura de uma linha, em fração da altura da imagem. */
-	static final double ALTURA_LINHA = 0.14;
+	static final double ALTURA_LINHA = 0.147;
 
 	/** Cor de fundo de cada coluna na imagem provisória. */
-	private static final Color[] FUNDO_COLUNA = { new Color(245, 214, 92), new Color(120, 190, 110),
-			new Color(214, 92, 80), new Color(245, 245, 245) };
+	/** Cor de fundo de cada coluna na imagem provisória (vermelha, verde, amarela, branca). */
+	private static final Color[] FUNDO_COLUNA = { new Color(232, 112, 92), new Color(150, 196, 96),
+			new Color(240, 206, 70), new Color(245, 245, 245) };
 
 	private static final Map<String, Image> CACHE = new HashMap<String, Image>();
+	private static final Map<String, Image> CACHE_FICHAS = new HashMap<String, Image>();
+	private static final Map<String, Image> CACHE_MELHORIAS = new HashMap<String, Image>();
+	/** Marca no cache os arquivos procurados e não encontrados, para não procurar de novo. */
+	private static final Image AUSENTE = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
 
 	private ImagensTabuleiroJogador() {
 	}
@@ -79,25 +92,49 @@ final class ImagensTabuleiroJogador {
 		return img;
 	}
 
-	/** Se a imagem do herdeiro veio de um arquivo (e não é a provisória). */
-	static boolean temArquivo(String herdeiro) {
-		return carregarArquivo(herdeiro) != null;
+	/**
+	 * Imagem da ficha de ativação do jogador da cor dada (nome da cor no
+	 * Model, ex.: "AZUL"), ou {@code null} se o arquivo não existir.
+	 */
+	static Image getFicha(String cor) {
+		return buscar(CACHE_FICHAS, PASTA_FICHAS, cor.toLowerCase());
+	}
+
+	/**
+	 * Imagem da peça de melhoria pelo id dado pelo Model (ex.: "CAV-V"), ou
+	 * {@code null} se o arquivo não existir.
+	 */
+	static Image getMelhoria(String id) {
+		return buscar(CACHE_MELHORIAS, PASTA_MELHORIAS, id);
+	}
+
+	private static Image buscar(Map<String, Image> cache, String pasta, String nome) {
+		Image img = cache.get(nome);
+		if (img == null) {
+			img = carregarArquivo(pasta, nome);
+			cache.put(nome, img == null ? AUSENTE : img);
+		}
+		return img == AUSENTE ? null : img;
 	}
 
 	private static Image carregarArquivo(String herdeiro) {
-		String base = herdeiro.toLowerCase();
+		return carregarArquivo(PASTA, herdeiro.toLowerCase());
+	}
+
+	/** Procura {@code pasta + nome + extensão} no disco e, se não achar, no classpath. */
+	private static Image carregarArquivo(String pasta, String nome) {
 		for (String ext : EXTENSOES) {
 			try {
-				File arquivo = new File(PASTA + base + ext);
+				File arquivo = new File(pasta + nome + ext);
 				if (arquivo.isFile()) {
 					return ImageIO.read(arquivo);
 				}
-				URL recurso = ImagensTabuleiroJogador.class.getResource("/" + PASTA + base + ext);
+				URL recurso = ImagensTabuleiroJogador.class.getResource("/" + pasta + nome + ext);
 				if (recurso != null) {
 					return ImageIO.read(recurso);
 				}
 			} catch (IOException e) {
-				System.err.println("Não foi possível ler a imagem de " + herdeiro + ": " + e.getMessage());
+				System.err.println("Não foi possível ler a imagem " + pasta + nome + ext + ": " + e.getMessage());
 			}
 		}
 		return null;

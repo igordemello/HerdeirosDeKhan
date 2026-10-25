@@ -1,59 +1,40 @@
 package model;
 
 /**
- * As 4 colunas do tabuleiro do jogador (pág. 6), da esquerda para a direita:
- * três coloridas e a branca.
+ * As 4 colunas do tabuleiro do jogador (pág. 6), da esquerda para a direita,
+ * como nos tabuleiros reais: vermelha, verde, amarela e branca.
  *
- * Cada coluna tem, na base, as ações iniciais impressas no tabuleiro. Ao
- * ativar a coluna, o jogador faz essas ações mais as das melhorias que
- * colocou acima delas. Os cavalos dão o número de movimentos do turno.
+ * As ações impressas na base de cada coluna mudam de herdeiro para herdeiro
+ * (ver {@link AcoesColuna} e {@link TabuleiroJogador}); aqui fica só o que
+ * é igual em todos os tabuleiros.
  *
- * Valores transcritos do tabuleiro de Tolui mostrado nas págs. 6 e 12 do
- * manual: amarela = 1 cavalo, 1 punho e 1 moeda virtual; verde = 2 cavalos
- * e 1 punho; vermelha = 1 cavalo, 2 punhos e o Khan; branca = 2 cavalos, o
- * Khan e recuperar as fichas. Para corrigir, basta alterar as constantes.
+ * A sigla é a letra usada nas peças de melhoria da cor da coluna
+ * (R = vermelha, V = verde, A = amarela); a branca não tem peças próprias.
  */
 enum ColunaJogador {
-	AMARELA(1, 1, 1, false, false),
-	VERDE(2, 1, 0, false, false),
-	VERMELHA(1, 2, 0, true, false),
-	BRANCA(2, 0, 0, true, true);
+	VERMELHA("R"),
+	VERDE("V"),
+	AMARELA("A"),
+	BRANCA(null);
 
-	private final int cavalos;
-	private final int punhos;
-	private final int moedasVirtuais;
-	private final boolean usaKhan;
-	private final boolean recuperaFichas;
+	private final String sigla;
 
-	ColunaJogador(int cavalos, int punhos, int moedasVirtuais, boolean usaKhan, boolean recuperaFichas) {
-		this.cavalos = cavalos;
-		this.punhos = punhos;
-		this.moedasVirtuais = moedasVirtuais;
-		this.usaKhan = usaKhan;
-		this.recuperaFichas = recuperaFichas;
+	ColunaJogador(String sigla) {
+		this.sigla = sigla;
 	}
 
-	/** Cavalos impressos na base da coluna (sem contar melhorias). */
-	int getCavalosIniciais() {
-		return cavalos;
+	/** Letra da cor (R, V ou A), ou {@code null} para a coluna branca. */
+	String getSigla() {
+		return sigla;
 	}
 
-	/** Punhos impressos na base da coluna (ações de pegar tributo). */
-	int getPunhosIniciais() {
-		return punhos;
-	}
-
-	int getMoedasVirtuaisIniciais() {
-		return moedasVirtuais;
-	}
-
-	/** Se a coluna tem o ícone do Khan (usar o Khan é obrigatório, pág. 9). */
-	boolean usaKhan() {
-		return usaKhan;
+	/** As três primeiras colunas são coloridas; a branca não. */
+	boolean ehColorida() {
+		return this != BRANCA;
 	}
 
 	/** Só a coluna branca recupera as fichas de ativação (pág. 9). */
 	boolean recuperaFichas() {
-		return recuperaFichas;
+		return this == BRANCA;
 	}
 }

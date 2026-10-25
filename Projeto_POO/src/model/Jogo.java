@@ -59,7 +59,7 @@ public class Jogo {
 
 	// ------------------------------------------------- tabuleiro do jogador
 
-	/** Nomes das colunas do tabuleiro do jogador, da esquerda para a direita. */
+	/** Nomes das colunas do tabuleiro do jogador, da esquerda para a direita (VERMELHA, VERDE, AMARELA, BRANCA). */
 	public List<String> getColunas() {
 		List<String> nomes = new ArrayList<String>();
 		for (ColunaJogador c : ColunaJogador.values()) {
@@ -95,15 +95,32 @@ public class Jogo {
 	/** Melhorias da coluna, da mais baixa para a mais alta (ex.: "DOIS_CAVALOS"). */
 	public List<String> getMelhoriasDaColuna(String cor, String coluna) {
 		List<String> nomes = new ArrayList<String>();
-		for (TipoMelhoria m : jogador(cor).getTabuleiro().getMelhorias(coluna(coluna))) {
-			nomes.add(m.name());
+		for (PecaMelhoria m : jogador(cor).getTabuleiro().getMelhorias(coluna(coluna))) {
+			nomes.add(m.getTipo().name());
 		}
 		return nomes;
 	}
 
-	/** Se a coluna tem o ícone do Khan (usar o Khan é obrigatório). */
-	public boolean colunaUsaKhan(String coluna) {
-		return coluna(coluna).usaKhan();
+	/**
+	 * Ids das peças de melhoria da coluna, da mais baixa para a mais alta
+	 * (ex.: "CAV-V"). A View usa o id para achar a imagem da peça.
+	 */
+	public List<String> getIdsDasMelhoriasDaColuna(String cor, String coluna) {
+		List<String> ids = new ArrayList<String>();
+		for (PecaMelhoria m : jogador(cor).getTabuleiro().getMelhorias(coluna(coluna))) {
+			ids.add(m.getId());
+		}
+		return ids;
+	}
+
+	/** Se a coluna do tabuleiro do jogador tem o ícone do Khan (usar o Khan é obrigatório). */
+	public boolean colunaUsaKhan(String cor, String coluna) {
+		return jogador(cor).getTabuleiro().usaKhan(coluna(coluna));
+	}
+
+	/** Moedas virtuais impressas na base da coluna do tabuleiro do jogador. */
+	public int getMoedasVirtuaisDaColuna(String cor, String coluna) {
+		return jogador(cor).getTabuleiro().getAcoesIniciais(coluna(coluna)).getMoedasVirtuais();
 	}
 
 	/**

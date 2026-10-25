@@ -24,7 +24,7 @@ class Jogador {
 
 	private int yurtsDisponiveis = YURTS_INICIAIS;
 	/** Tabuleiro do jogador: colunas, fichas de ativação e melhorias. */
-	private final TabuleiroJogador tabuleiro = new TabuleiroJogador();
+	private final TabuleiroJogador tabuleiro;
 	private int votos = 0;
 
 	private final Map<TipoTributo, Integer> tributos = new EnumMap<TipoTributo, Integer>(TipoTributo.class);
@@ -44,6 +44,7 @@ class Jogador {
 		}
 		this.cor = cor;
 		this.herdeiro = cor.getHerdeiro();
+		this.tabuleiro = new TabuleiroJogador(herdeiro);
 		for (TipoTributo t : TipoTributo.values()) {
 			tributos.put(t, 0);
 		}

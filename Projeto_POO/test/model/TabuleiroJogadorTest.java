@@ -15,7 +15,7 @@ public class TabuleiroJogadorTest {
 
 	@Before
 	public void setUp() {
-		tab = new TabuleiroJogador();
+		tab = new TabuleiroJogador(Herdeiro.TOLUI);
 	}
 
 	/**
@@ -43,7 +43,7 @@ public class TabuleiroJogadorTest {
 	/**
 	 * Objetivo: verificar que os cavalos da coluna somam a base e as
 	 * melhorias, e que a coluna aceita no máximo 4 melhorias.
-	 * Entrada: VERDE (2 cavalos) recebe DOIS_CAVALOS, PUNHO e mais 3 melhorias.
+	 * Entrada: VERDE de Tolui (2 cavalos) recebe DOIS_CAVALOS, PUNHO e mais 3 melhorias.
 	 * Resultado esperado: 4 cavalos e 2 punhos; a 5ª melhoria é recusada.
 	 */
 	@Test
@@ -85,5 +85,53 @@ public class TabuleiroJogadorTest {
 		assertNull(jogo.getColunaAtivadaNaVez());
 		assertTrue(jogo.colunaOcupada("AZUL", "VERDE"));
 		assertTrue(jogo.podeAtivarColuna("VERDE")); // a coluna do jogador VERDE está livre
+	}
+
+	/**
+	 * Objetivo: verificar que as ações da base mudam conforme o herdeiro,
+	 * como nos tabuleiros reais.
+	 * Entrada: coluna VERMELHA de Tolui, Altani e Ogedei.
+	 * Resultado esperado: Tolui 1 cavalo (sem Khan), Altani 1 cavalo e Khan,
+	 * Ogedei 2 cavalos; a BRANCA tem 2 cavalos e Khan em todos.
+	 */
+	@Test
+	public void acoesDaBaseDependemDoHerdeiro() {
+		TabuleiroJogador altani = new TabuleiroJogador(Herdeiro.ALTANI);
+		TabuleiroJogador ogedei = new TabuleiroJogador(Herdeiro.OGEDEI);
+
+		assertEquals(1, tab.getCavalos(ColunaJogador.VERMELHA));
+		assertFalse(tab.usaKhan(ColunaJogador.VERMELHA));
+		assertEquals(1, altani.getCavalos(ColunaJogador.VERMELHA));
+		assertTrue(altani.usaKhan(ColunaJogador.VERMELHA));
+		assertEquals(2, ogedei.getCavalos(ColunaJogador.VERMELHA));
+
+		for (TabuleiroJogador t : new TabuleiroJogador[] { tab, altani, ogedei }) {
+			assertEquals(2, t.getCavalos(ColunaJogador.BRANCA));
+			assertTrue(t.usaKhan(ColunaJogador.BRANCA));
+		}
+	}
+
+	/**
+	 * Objetivo: verificar a regra de cor das melhorias e o id usado pela View.
+	 * Entrada: peça CAV verde na coluna VERMELHA, depois na VERDE e na BRANCA.
+	 * Resultado esperado: recusada na VERMELHA; aceita na VERDE e na BRANCA,
+	 * com id "CAV-V"; tesouro virtual de ferro só existe vermelho.
+	 */
+	@Test
+	public void corDaMelhoriaPrecisaCombinarComAColuna() {
+		PecaMelhoria cavalosVerde = new PecaMelhoria(TipoMelhoria.DOIS_CAVALOS, ColunaJogador.VERDE);
+		assertEquals("CAV-V", cavalosVerde.getId());
+
+		assertFalse(tab.adicionarMelhoria(ColunaJogador.VERMELHA, cavalosVerde));
+		assertTrue(tab.adicionarMelhoria(ColunaJogador.VERDE, cavalosVerde));
+		assertTrue(tab.adicionarMelhoria(ColunaJogador.BRANCA, cavalosVerde));
+		assertEquals(4, tab.getCavalos(ColunaJogador.BRANCA));
+
+		try {
+			new PecaMelhoria(TipoMelhoria.TESOURO_VIRTUAL_FERRO, ColunaJogador.VERDE);
+			fail("O tesouro virtual de ferro só existe vermelho");
+		} catch (IllegalArgumentException e) {
+			assertEquals("MOB-R", new PecaMelhoria(TipoMelhoria.TESOURO_VIRTUAL_FERRO, ColunaJogador.VERMELHA).getId());
+		}
 	}
 }
