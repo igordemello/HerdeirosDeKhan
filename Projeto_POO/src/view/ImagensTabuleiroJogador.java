@@ -122,7 +122,7 @@ final class ImagensTabuleiroJogador {
 	}
 
 	/** Procura {@code pasta + nome + extensão} no disco e, se não achar, no classpath. */
-	private static Image carregarArquivo(String pasta, String nome) {
+	static Image carregarArquivo(String pasta, String nome) {
 		for (String ext : EXTENSOES) {
 			try {
 				File arquivo = new File(pasta + nome + ext);

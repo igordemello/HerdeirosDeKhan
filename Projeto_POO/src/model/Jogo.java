@@ -50,6 +50,15 @@ public class Jogo {
 		return gerenciador.getJogadorDaVez().getCor().name();
 	}
 
+	/** Cores dos jogadores da partida, na ordem de jogo. */
+	public List<String> getCores() {
+		List<String> cores = new ArrayList<String>();
+		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
+			cores.add(j.getCor().name());
+		}
+		return cores;
+	}
+
 	/** Passa a vez e retorna a cor do próximo jogador. */
 	public String passarVez() {
 		colunaAtivadaNaVez = null;
