@@ -44,13 +44,16 @@ public class TabuleiroJogadorTest {
 	 * Objetivo: verificar que os cavalos da coluna somam a base e as
 	 * melhorias, e que a coluna aceita no máximo 4 melhorias.
 	 * Entrada: VERDE de Tolui (2 cavalos) recebe DOIS_CAVALOS, PUNHO e mais 3 melhorias.
-	 * Resultado esperado: 4 cavalos e 2 punhos; a 5ª melhoria é recusada.
+	 * Resultado esperado: 2 cavalos enquanto as peças são novas; depois do fim do
+	 * turno, 4 cavalos e 2 punhos; a 5ª melhoria é recusada.
 	 */
 	@Test
 	public void cavalosSomamBaseEMelhorias() {
 		assertEquals(2, tab.getCavalos(ColunaJogador.VERDE));
 		assertTrue(tab.adicionarMelhoria(ColunaJogador.VERDE, TipoMelhoria.DOIS_CAVALOS));
 		assertTrue(tab.adicionarMelhoria(ColunaJogador.VERDE, TipoMelhoria.PUNHO));
+		assertEquals(2, tab.getCavalos(ColunaJogador.VERDE)); // colocadas neste turno ainda não valem
+		tab.encerrarTurno();
 		assertEquals(4, tab.getCavalos(ColunaJogador.VERDE));
 		assertEquals(2, tab.getPunhos(ColunaJogador.VERDE));
 
@@ -125,6 +128,7 @@ public class TabuleiroJogadorTest {
 		assertFalse(tab.adicionarMelhoria(ColunaJogador.VERMELHA, cavalosVerde));
 		assertTrue(tab.adicionarMelhoria(ColunaJogador.VERDE, cavalosVerde));
 		assertTrue(tab.adicionarMelhoria(ColunaJogador.BRANCA, cavalosVerde));
+		tab.encerrarTurno();
 		assertEquals(4, tab.getCavalos(ColunaJogador.BRANCA));
 
 		try {

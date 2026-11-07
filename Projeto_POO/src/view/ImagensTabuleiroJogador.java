@@ -26,6 +26,9 @@ import javax.imageio.ImageIO;
  * (ex.: {@code tolui.jpg});</li>
  * <li>fichas de ativação, uma por cor de jogador, em {@code imagens/fichas/}
  * (ex.: {@code azul.jpg});</li>
+ * <li>peças de tributo, tesouros e peças de bônus, pelo nome do tipo no
+ * Model, em {@code imagens/tributos/}, {@code imagens/tesouros/} e
+ * {@code imagens/bonus/} (ex.: {@code SEDA.jpg});</li>
  * <li>peças de melhoria, pelo id da peça no Model, em
  * {@code imagens/melhorias/} (ex.: {@code CAV-V.jpg}).</li>
  * </ul>
@@ -44,6 +47,9 @@ final class ImagensTabuleiroJogador {
 	static final String PASTA = "imagens/tabuleiros/";
 	static final String PASTA_FICHAS = "imagens/fichas/";
 	static final String PASTA_MELHORIAS = "imagens/melhorias/";
+	static final String PASTA_TRIBUTOS = "imagens/tributos/";
+	static final String PASTA_TESOUROS = "imagens/tesouros/";
+	static final String PASTA_BONUS = "imagens/bonus/";
 	private static final String[] EXTENSOES = { ".png", ".jpg", ".jpeg", ".gif" };
 
 	/** Proporção largura/altura do tabuleiro do jogador. */
@@ -68,6 +74,9 @@ final class ImagensTabuleiroJogador {
 	private static final Map<String, Image> CACHE = new HashMap<String, Image>();
 	private static final Map<String, Image> CACHE_FICHAS = new HashMap<String, Image>();
 	private static final Map<String, Image> CACHE_MELHORIAS = new HashMap<String, Image>();
+	private static final Map<String, Image> CACHE_TRIBUTOS = new HashMap<String, Image>();
+	private static final Map<String, Image> CACHE_TESOUROS = new HashMap<String, Image>();
+	private static final Map<String, Image> CACHE_BONUS = new HashMap<String, Image>();
 	/** Marca no cache os arquivos procurados e não encontrados, para não procurar de novo. */
 	private static final Image AUSENTE = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
 
@@ -106,6 +115,21 @@ final class ImagensTabuleiroJogador {
 	 */
 	static Image getMelhoria(String id) {
 		return buscar(CACHE_MELHORIAS, PASTA_MELHORIAS, id);
+	}
+
+	/** Peça de tributo pelo nome do tipo no Model ("ESPADA", "YURT", "MOEDA"), ou {@code null}. */
+	static Image getTributo(String tipo) {
+		return buscar(CACHE_TRIBUTOS, PASTA_TRIBUTOS, tipo);
+	}
+
+	/** Peça de tesouro pelo nome do tipo no Model (ex.: "SEDA"), ou {@code null}. */
+	static Image getTesouro(String tipo) {
+		return buscar(CACHE_TESOUROS, PASTA_TESOUROS, tipo);
+	}
+
+	/** Peça de bônus pelo nome do tipo no Model (ex.: "DUAS_ESPADAS"), ou {@code null}. */
+	static Image getBonus(String tipo) {
+		return buscar(CACHE_BONUS, PASTA_BONUS, tipo);
 	}
 
 	private static Image buscar(Map<String, Image> cache, String pasta, String nome) {

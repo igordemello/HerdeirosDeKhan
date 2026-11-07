@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,6 +29,12 @@ class Jogador {
 	private int votos = 0;
 
 	private final Map<TipoTributo, Integer> tributos = new EnumMap<TipoTributo, Integer>(TipoTributo.class);
+	/** Tesouros que o jogador tem e ainda não entregou. */
+	private final Map<TipoTesouro, Integer> tesouros = new EnumMap<TipoTesouro, Integer>(TipoTesouro.class);
+	/** Peças de bônus recebidas e ainda não usadas. */
+	private final List<TipoBonus> bonusDisponiveis = new ArrayList<TipoBonus>();
+	/** Peças de bônus já usadas (viradas para o verso, pág. 17). */
+	private final List<TipoBonus> bonusUsados = new ArrayList<TipoBonus>();
 
 	/** Cartas secretas recebidas na preparação, ainda não escolhidas (chave = id). */
 	private final Map<Integer, CartaConselheiroSecreto> cartasSecretasRecebidas =
@@ -47,6 +54,9 @@ class Jogador {
 		this.tabuleiro = new TabuleiroJogador(herdeiro);
 		for (TipoTributo t : TipoTributo.values()) {
 			tributos.put(t, 0);
+		}
+		for (TipoTesouro t : TipoTesouro.values()) {
+			tesouros.put(t, 0);
 		}
 	}
 
@@ -130,6 +140,87 @@ class Jogador {
 			throw new IllegalArgumentException("Quantidade de votos negativa");
 		}
 		votos += quantidade;
+	}
+
+	// --------------------------------------------------------------- tesouros
+
+	int getQuantidadeTesouro(TipoTesouro tipo) {
+		return tesouros.get(tipo);
+	}
+
+	/** Total de tesouros não entregues (critério de desempate, pág. 16). */
+	int getTotalTesouros() {
+		int total = 0;
+		for (int n : tesouros.values()) {
+			total += n;
+		}
+		return total;
+	}
+
+	/** Quantos tipos diferentes de tesouro o jogador tem. */
+	int getTiposDeTesouro() {
+		int tipos = 0;
+		for (int n : tesouros.values()) {
+			if (n > 0) {
+				tipos++;
+			}
+		}
+		return tipos;
+	}
+
+	void adicionarTesouro(TipoTesouro tipo, int quantidade) {
+		if (tipo == null || quantidade < 0) {
+			throw new IllegalArgumentException("Tesouro inválido");
+		}
+		tesouros.put(tipo, tesouros.get(tipo) + quantidade);
+	}
+
+	/**
+	 * Tira tesouros do jogador. Se ele não tiver o suficiente, nada muda.
+	 *
+	 * @return {@code true} se os tesouros foram retirados
+	 */
+	boolean removerTesouro(TipoTesouro tipo, int quantidade) {
+		if (tipo == null || quantidade < 0) {
+			throw new IllegalArgumentException("Tesouro inválido");
+		}
+		int atual = tesouros.get(tipo);
+		if (atual < quantidade) {
+			return false;
+		}
+		tesouros.put(tipo, atual - quantidade);
+		return true;
+	}
+
+	// ---------------------------------------------------------- peças de bônus
+
+	void receberBonus(TipoBonus bonus) {
+		if (bonus == null) {
+			throw new IllegalArgumentException("Bônus nulo");
+		}
+		bonusDisponiveis.add(bonus);
+	}
+
+	List<TipoBonus> getBonusDisponiveis() {
+		return Collections.unmodifiableList(bonusDisponiveis);
+	}
+
+	/** Todas as peças de bônus que o jogador já recebeu, usadas ou não. */
+	int getTotalBonusRecebidos() {
+		return bonusDisponiveis.size() + bonusUsados.size();
+	}
+
+	/**
+	 * Marca uma peça de bônus como usada.
+	 *
+	 * @return {@code false} se o jogador não tem essa peça para usar
+	 */
+	boolean usarBonus(TipoBonus bonus) {
+		if (!bonusDisponiveis.remove(bonus)) {
+			return false;
+		}
+		bonusUsados.add(bonus);
+		return true;
 	}
 
 	// ------------------------------------------------- cartas de conselheiro

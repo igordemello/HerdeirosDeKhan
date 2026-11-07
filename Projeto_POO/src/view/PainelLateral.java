@@ -30,6 +30,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import model.Jogo;
 
@@ -114,6 +115,12 @@ public class PainelLateral extends JPanel {
 	/** Onde o tabuleiro foi desenhado na última pintura (para tratar cliques). */
 	private Rectangle areaTabuleiro = new Rectangle();
 
+	/** Votos, tributos, tesouros, bônus e botões das janelas (3ª iteração). */
+	private final PainelRecursos recursos;
+	private JanelaMercado janelaMercado;
+	private JanelaEntregas janelaEntregas;
+	private JanelaCartas janelaCartas;
+
 	public PainelLateral(Jogo jogo) {
 		if (jogo == null) {
 			throw new IllegalArgumentException("Jogo nulo");
@@ -128,6 +135,8 @@ public class PainelLateral extends JPanel {
 		JPanel envoltorio = new JPanel(new BorderLayout());
 		envoltorio.setOpaque(false);
 		envoltorio.add(criarPainelDeControles(), BorderLayout.NORTH);
+		recursos = new PainelRecursos(jogo, this);
+		envoltorio.add(recursos, BorderLayout.CENTER);
 		add(envoltorio, BorderLayout.CENTER);
 
 		for (int i = 0; i <= MAX_MOVIMENTOS_TESTE; i++) {
@@ -170,7 +179,76 @@ public class PainelLateral extends JPanel {
 		} finally {
 			atualizandoComponentes = false;
 		}
+		recursos.atualizar();
+		if (janelaMercado != null) {
+			janelaMercado.atualizar();
+		}
+		if (janelaEntregas != null) {
+			janelaEntregas.atualizar();
+		}
+		if (janelaCartas != null) {
+			janelaCartas.atualizar();
+		}
+		if (jogo.getMelhoriasGratisPendentes() > 0) {
+			abrirMelhorias(); // linha completa: o jogador escolhe a melhoria grátis
+		}
 		repaint();
+	}
+
+	// ------------------------------------------------- janelas do jogador
+
+	/** Abre (ou traz para a frente) a janela de melhorias. */
+	void abrirMelhorias() {
+		if (janelaMercado == null) {
+			janelaMercado = new JanelaMercado(SwingUtilities.getWindowAncestor(this), jogo, this);
+		}
+		mostrar(janelaMercado);
+	}
+
+	/** Abre (ou traz para a frente) a janela de entregas aos conselheiros. */
+	void abrirEntregas() {
+		if (janelaEntregas == null) {
+			janelaEntregas = new JanelaEntregas(SwingUtilities.getWindowAncestor(this), jogo, this);
+		}
+		mostrar(janelaEntregas);
+	}
+
+	/** Abre (ou traz para a frente) a janela de cartas do jogador da vez. */
+	void abrirCartas() {
+		if (janelaCartas == null) {
+			janelaCartas = new JanelaCartas(SwingUtilities.getWindowAncestor(this), jogo, this);
+		}
+		mostrar(janelaCartas);
+	}
+
+	private void mostrar(javax.swing.JDialog janela) {
+		if (!isShowing()) {
+			return; // painel ainda não está na tela (ex.: testes)
+		}
+		if (janela instanceof JanelaMercado) {
+			((JanelaMercado) janela).atualizar();
+		} else if (janela instanceof JanelaEntregas) {
+			((JanelaEntregas) janela).atualizar();
+		} else if (janela instanceof JanelaCartas) {
+			((JanelaCartas) janela).atualizar();
+		}
+		janela.setVisible(true);
+		janela.toFront();
+	}
+
+	/**
+	 * Escolha dos conselheiros secretos no início da partida: abre, para cada
+	 * jogador, uma janela modal com as 2 cartas dele. Deve ser chamado pelo
+	 * Controller antes da primeira rodada (pág. 6).
+	 */
+	public void escolherConselheirosSecretos() {
+		JanelaCartas.escolherConselheirosSecretos(SwingUtilities.getWindowAncestor(this), jogo);
+		atualizar();
+	}
+
+	/** Avisa a janela de que os movimentos do turno mudaram (ex.: bônus de 3 movimentos). */
+	void firePropertyChangeMovimentos() {
+		firePropertyChange("movimentos", -1, jogo.getMovimentosDaVez());
 	}
 
 	private boolean ativarColuna(String coluna) {

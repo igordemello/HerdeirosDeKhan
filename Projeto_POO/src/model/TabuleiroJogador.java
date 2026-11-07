@@ -3,8 +3,10 @@ package model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Tabuleiro de um jogador (págs. 6, 9 e 11-12): as 4 colunas, as fichas de
@@ -51,6 +53,11 @@ class TabuleiroJogador {
 	private final Map<ColunaJogador, Boolean> ocupada = new HashMap<ColunaJogador, Boolean>();
 	/** Melhorias de cada coluna, da mais baixa para a mais alta. */
 	private final Map<ColunaJogador, List<PecaMelhoria>> melhorias = new HashMap<ColunaJogador, List<PecaMelhoria>>();
+	/**
+	 * Peças colocadas neste turno: os benefícios delas só valem a partir do
+	 * próximo turno (pág. 12).
+	 */
+	private final Set<PecaMelhoria> novasNoTurno = new HashSet<PecaMelhoria>();
 
 	TabuleiroJogador(Herdeiro herdeiro) {
 		if (herdeiro == null) {
@@ -120,10 +127,13 @@ class TabuleiroJogador {
 
 	// ------------------------------------------------------- ações da coluna
 
-	/** Cavalos da coluna = movimentos do turno em que ela for ativada. */
+	/**
+	 * Cavalos da coluna = movimentos do turno em que ela for ativada. As
+	 * melhorias colocadas neste turno ainda não contam.
+	 */
 	int getCavalos(ColunaJogador coluna) {
 		int total = getAcoesIniciais(coluna).getCavalos();
-		for (PecaMelhoria m : melhorias.get(coluna)) {
+		for (PecaMelhoria m : melhoriasUsaveis(coluna)) {
 			total += m.getTipo().getCavalos();
 		}
 		return total;
@@ -132,10 +142,46 @@ class TabuleiroJogador {
 	/** Punhos da coluna = quantas peças de tributo o jogador pode pegar. */
 	int getPunhos(ColunaJogador coluna) {
 		int total = getAcoesIniciais(coluna).getPunhos();
-		for (PecaMelhoria m : melhorias.get(coluna)) {
+		for (PecaMelhoria m : melhoriasUsaveis(coluna)) {
 			total += m.getTipo().getPunhos();
 		}
 		return total;
+	}
+
+	/**
+	 * Peças de tributo virtuais que a coluna dá no turno em que é ativada: a
+	 * moeda virtual impressa na base (só a moeda existe na base) mais as
+	 * melhorias de moeda, espada ou yurt virtual (pág. 16).
+	 */
+	int getTributosVirtuais(ColunaJogador coluna, TipoTributo tipo) {
+		int total = tipo == TipoTributo.MOEDA ? getAcoesIniciais(coluna).getMoedasVirtuais() : 0;
+		for (PecaMelhoria m : melhoriasUsaveis(coluna)) {
+			if (m.getTipo().getTributoVirtual() == tipo) {
+				total++;
+			}
+		}
+		return total;
+	}
+
+	/** Tesouros virtuais que a coluna dá no turno em que é ativada. */
+	List<TipoTesouro> getTesourosVirtuais(ColunaJogador coluna) {
+		List<TipoTesouro> lista = new ArrayList<TipoTesouro>();
+		for (PecaMelhoria m : melhoriasUsaveis(coluna)) {
+			if (m.getTipo().getTesouroVirtual() != null) {
+				lista.add(m.getTipo().getTesouroVirtual());
+			}
+		}
+		return lista;
+	}
+
+	private List<PecaMelhoria> melhoriasUsaveis(ColunaJogador coluna) {
+		List<PecaMelhoria> lista = new ArrayList<PecaMelhoria>();
+		for (PecaMelhoria m : melhorias.get(verificar(coluna))) {
+			if (!novasNoTurno.contains(m)) {
+				lista.add(m);
+			}
+		}
+		return lista;
 	}
 
 	/** Se a coluna tem o ícone do Khan neste tabuleiro. */
@@ -163,7 +209,50 @@ class TabuleiroJogador {
 			return false;
 		}
 		lista.add(peca);
+		novasNoTurno.add(peca);
 		return true;
+	}
+
+	/** Fim do turno: as melhorias colocadas nele passam a valer. */
+	void encerrarTurno() {
+		novasNoTurno.clear();
+	}
+
+	/** Se a coluna ainda tem espaço para uma melhoria. */
+	boolean temEspaco(ColunaJogador coluna) {
+		return melhorias.get(verificar(coluna)).size() < MAX_MELHORIAS_POR_COLUNA;
+	}
+
+	/**
+	 * Linhas completas: linhas em que as 3 colunas coloridas têm melhoria.
+	 * Cada linha completa dá uma melhoria grátis na coluna branca (pág. 12).
+	 */
+	int getLinhasCompletas() {
+		int menor = MAX_MELHORIAS_POR_COLUNA;
+		for (ColunaJogador c : ColunaJogador.values()) {
+			if (c.ehColorida()) {
+				menor = Math.min(menor, melhorias.get(c).size());
+			}
+		}
+		return menor;
+	}
+
+	/** Total de melhorias no tabuleiro, em todas as colunas. */
+	int getTotalMelhorias() {
+		int total = 0;
+		for (List<PecaMelhoria> lista : melhorias.values()) {
+			total += lista.size();
+		}
+		return total;
+	}
+
+	/** Todas as melhorias do tabuleiro, em todas as colunas. */
+	List<PecaMelhoria> getTodasAsMelhorias() {
+		List<PecaMelhoria> todas = new ArrayList<PecaMelhoria>();
+		for (ColunaJogador c : ColunaJogador.values()) {
+			todas.addAll(melhorias.get(c));
+		}
+		return todas;
 	}
 
 	/**

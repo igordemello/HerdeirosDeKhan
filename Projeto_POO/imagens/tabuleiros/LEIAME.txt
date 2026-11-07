@@ -13,3 +13,10 @@ imagens/melhorias/   peças de melhoria (cartoes1), com o mesmo nome do id da
 As posições das colunas dentro do tabuleiro ficam em
 view/ImagensTabuleiroJogador.java (X_COLUNA, LARGURA_COLUNA, Y_ESPACO,
 Y_BASE, ALTURA_LINHA).
+
+Na 3ª iteração entraram (cartoes.zip do EAD, reduzidas):
+imagens/tributos/   ESPADA, YURT, MOEDA (cartoes6)
+imagens/tesouros/   BOI, ESPECIARIA, FERRO, PELE, SEDA (cartoes7)
+imagens/bonus/      as 7 peças de bônus, com o nome do tipo no Model (cartoes3)
+As cartas de conselheiro não vieram nos zips e são desenhadas com Java2D
+(view/ComponenteCarta.java).
