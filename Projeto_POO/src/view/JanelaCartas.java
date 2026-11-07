@@ -52,8 +52,11 @@ class JanelaCartas extends JDialog {
 		conteudo.setLayout(new BoxLayout(conteudo, BoxLayout.Y_AXIS));
 		conteudo.setBorder(BorderFactory.createEmptyBorder(8, 12, 12, 12));
 		setLayout(new BorderLayout());
-		add(new JScrollPane(conteudo), BorderLayout.CENTER);
-		setSize(820, corFixa == null ? 720 : 340);
+		JScrollPane rolagem = new JScrollPane(conteudo);
+		rolagem.getVerticalScrollBar().setUnitIncrement(24);
+		add(rolagem, BorderLayout.CENTER);
+		int alturaTela = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().height;
+		setSize(820, Math.min(corFixa == null ? 760 : 420, alturaTela));
 		setLocationRelativeTo(dono);
 		atualizar();
 	}
@@ -128,12 +131,13 @@ class JanelaCartas extends JDialog {
 	}
 
 	private ComponenteCarta cartaSecreta(String tipo, String rodape) {
-		return ComponenteCarta.secreta(jogo.getNomeCartaSecreta(tipo), jogo.getDescricaoCartaSecreta(tipo),
-				jogo.getLimiaresCartaSecreta(tipo), rodape);
+		return ComponenteCarta.secreta(ImagensTabuleiroJogador.getCarta(tipo), jogo.getNomeCartaSecreta(tipo),
+				jogo.getDescricaoCartaSecreta(tipo), jogo.getLimiaresCartaSecreta(tipo), rodape);
 	}
 
 	private ComponenteCarta cartaAberta(String tipo, String rodape) {
-		return ComponenteCarta.aberta(jogo.getQuantidadeCartaAberta(tipo), jogo.getDescricaoCartaAberta(tipo), rodape);
+		return ComponenteCarta.aberta(ImagensTabuleiroJogador.getCarta(tipo), jogo.getQuantidadeCartaAberta(tipo),
+				jogo.getDescricaoCartaAberta(tipo), rodape);
 	}
 
 	private JPanel linhaDeCartas() {

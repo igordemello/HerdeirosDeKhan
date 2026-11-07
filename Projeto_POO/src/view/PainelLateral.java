@@ -9,7 +9,6 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
@@ -64,7 +63,7 @@ public class PainelLateral extends JPanel {
 	private static final int MAX_MOVIMENTOS_TESTE = 12;
 	private static final int MARGEM = 16;
 	/** Altura da parte desenhada (cabeçalho, tabuleiro e resumo); os controles ficam abaixo. */
-	private static final int ALTURA_DESENHO = 475;
+	private static final int ALTURA_DESENHO = 410;
 
 	/** Cor de fundo de cada jogador (chave = nome da cor no Model). */
 	private static final Map<String, Color> CORES = new HashMap<String, Color>();
@@ -104,10 +103,10 @@ public class PainelLateral extends JPanel {
 	private final List<String> colunas;
 
 	private final JComboBox<String> comboColunas = new JComboBox<String>();
-	private final JButton botaoAtivar = new JButton("Ativar coluna");
+	private final JButton botaoAtivar = new JButton("Ativar");
 	private final JComboBox<Integer> comboMovimentos = new JComboBox<Integer>();
 	private final JLabel rotuloColuna = new JLabel("Coluna:");
-	private final JLabel rotuloMovimentos = new JLabel("Movimentos (teste):");
+	private final JLabel rotuloMovimentos = new JLabel("Mov.:");
 
 	/** Evita que as mudanças feitas pelo próprio painel nos JComboBox disparem eventos. */
 	private boolean atualizandoComponentes = false;
@@ -120,6 +119,7 @@ public class PainelLateral extends JPanel {
 	private JanelaMercado janelaMercado;
 	private JanelaEntregas janelaEntregas;
 	private JanelaCartas janelaCartas;
+	private final BarraDoTurno barraDoTurno;
 
 	public PainelLateral(Jogo jogo) {
 		if (jogo == null) {
@@ -137,6 +137,8 @@ public class PainelLateral extends JPanel {
 		envoltorio.add(criarPainelDeControles(), BorderLayout.NORTH);
 		recursos = new PainelRecursos(jogo, this);
 		envoltorio.add(recursos, BorderLayout.CENTER);
+		barraDoTurno = new BarraDoTurno(jogo);
+		envoltorio.add(barraDoTurno, BorderLayout.SOUTH);
 		add(envoltorio, BorderLayout.CENTER);
 
 		for (int i = 0; i <= MAX_MOVIMENTOS_TESTE; i++) {
@@ -180,6 +182,7 @@ public class PainelLateral extends JPanel {
 			atualizandoComponentes = false;
 		}
 		recursos.atualizar();
+		barraDoTurno.atualizar();
 		if (janelaMercado != null) {
 			janelaMercado.atualizar();
 		}
@@ -193,6 +196,18 @@ public class PainelLateral extends JPanel {
 			abrirMelhorias(); // linha completa: o jogador escolhe a melhoria grátis
 		}
 		repaint();
+	}
+
+	public JButton getBotaoPassarVez() {
+		return barraDoTurno.getBotaoPassarVez();
+	}
+
+	public JButton getBotaoHabilidade() {
+		return barraDoTurno.getBotaoHabilidade();
+	}
+
+	public void mostrarMensagem(String texto) {
+		barraDoTurno.mostrarMensagem(texto);
 	}
 
 	// ------------------------------------------------- janelas do jogador
@@ -307,8 +322,7 @@ public class PainelLateral extends JPanel {
 		y += altura + 18;
 
 		// resumo do turno
-		y = desenharResumoDoTurno(g2, cor, texto, y);
-		desenharCavalosPorColuna(g2, cor, texto, y + 8);
+		desenharResumoDoTurno(g2, cor, texto, y);
 		g2.dispose();
 	}
 
@@ -445,42 +459,29 @@ public class PainelLateral extends JPanel {
 				: "Coluna ativada: " + NOMES_COLUNAS.get(ativada), MARGEM, y);
 
 		// caixa com o número de movimentos (o equivalente aos dados)
-		y += 12;
-		int lado = 76;
+		y += 8;
+		int lado = 56;
 		g2.setColor(Color.WHITE);
-		g2.fill(new RoundRectangle2D.Double(MARGEM, y, lado, lado, 16, 16));
+		g2.fill(new RoundRectangle2D.Double(MARGEM, y, lado, lado, 14, 14));
 		g2.setColor(Color.BLACK);
 		g2.setStroke(new BasicStroke(2f));
-		g2.draw(new RoundRectangle2D.Double(MARGEM, y, lado, lado, 16, 16));
-		g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 44));
+		g2.draw(new RoundRectangle2D.Double(MARGEM, y, lado, lado, 14, 14));
+		g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 34));
 		fm = g2.getFontMetrics();
 		String mov = String.valueOf(jogo.getMovimentosDaVez());
 		g2.drawString(mov, MARGEM + (lado - fm.stringWidth(mov)) / 2,
 				y + (lado - fm.getHeight()) / 2 + fm.getAscent());
 
+		// tirei a linha "Cavalos: ..." pra caber em tela menor; os cavalos já
+		// aparecem na lista de colunas
+		int x = MARGEM + lado + 12;
 		g2.setColor(texto);
-		g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 18));
-		g2.drawString("movimentos", MARGEM + lado + 14, y + 32);
+		g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 17));
+		g2.drawString("movimentos", x, y + 24);
 		g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-		g2.drawString("Fichas livres: " + jogo.getFichasAtivacaoDisponiveis(cor) + " de 4", MARGEM + lado + 14,
-				y + 56);
+		g2.drawString("Punhos: " + jogo.getPunhosDaVez() + "   ·   Fichas livres: "
+				+ jogo.getFichasAtivacaoDisponiveis(cor) + " de 4", x, y + 46);
 		return y + lado;
-	}
-
-	private void desenharCavalosPorColuna(Graphics2D g2, String cor, Color texto, int y) {
-		g2.setColor(texto);
-		g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-		FontMetrics fm = g2.getFontMetrics();
-		y += fm.getAscent() + 6;
-		StringBuilder sb = new StringBuilder("Cavalos: ");
-		for (int i = 0; i < colunas.size(); i++) {
-			String c = colunas.get(i);
-			if (i > 0) {
-				sb.append("  ·  ");
-			}
-			sb.append(NOMES_COLUNAS.get(c)).append(' ').append(jogo.getCavalosDaColuna(cor, c));
-		}
-		g2.drawString(sb.toString(), MARGEM, y);
 	}
 
 	/** Retângulo de uma célula da coluna i, na linha cujo topo é yFrac. */
@@ -521,25 +522,20 @@ public class PainelLateral extends JPanel {
 	// ----------------------------------------------------------- controles
 
 	private JPanel criarPainelDeControles() {
-		JPanel controles = new JPanel(new GridLayout(2, 1, 0, 6));
+		// tudo numa linha só pra sobrar altura em notebook
+		JPanel controles = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
 		controles.setOpaque(false);
-		controles.setBorder(BorderFactory.createEmptyBorder(0, MARGEM - 6, MARGEM, MARGEM));
-
-		JPanel linhaColuna = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-		linhaColuna.setOpaque(false);
-		linhaColuna.add(rotuloColuna);
-		comboColunas.setPreferredSize(new Dimension(150, 28));
-		linhaColuna.add(comboColunas);
-		linhaColuna.add(botaoAtivar);
-
-		JPanel linhaMovimentos = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-		linhaMovimentos.setOpaque(false);
-		linhaMovimentos.add(rotuloMovimentos);
-		comboMovimentos.setPreferredSize(new Dimension(70, 28));
-		linhaMovimentos.add(comboMovimentos);
-
-		controles.add(linhaColuna);
-		controles.add(linhaMovimentos);
+		controles.setBorder(BorderFactory.createEmptyBorder(0, MARGEM - 4, 8, 0));
+		comboColunas.setPreferredSize(new Dimension(128, 26));
+		botaoAtivar.setMargin(new java.awt.Insets(2, 6, 2, 6));
+		comboMovimentos.setPreferredSize(new Dimension(52, 26));
+		comboMovimentos.setToolTipText("Movimentos (teste): define à mão os movimentos do turno");
+		controles.add(rotuloColuna);
+		controles.add(comboColunas);
+		controles.add(botaoAtivar);
+		controles.add(Box.createHorizontalStrut(4));
+		controles.add(rotuloMovimentos);
+		controles.add(comboMovimentos);
 		return controles;
 	}
 

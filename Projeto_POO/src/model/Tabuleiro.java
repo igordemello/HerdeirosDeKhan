@@ -44,6 +44,10 @@ class Tabuleiro {
 	private final Parada karakorum;
 	private boolean preparado = false;
 
+	static final String AREA_DE_MELHORIAS = "MELHORIAS";
+	// id da província do Khan ou AREA_DE_MELHORIAS; null no começo (Khan fora do tabuleiro)
+	private String lugarDoKhan = null;
+
 	Tabuleiro() {
 		karakorum = new Parada(ID_KARAKORUM, TipoParada.KARAKORUM, null);
 		paradas.put(ID_KARAKORUM, karakorum);
@@ -245,6 +249,10 @@ class Tabuleiro {
 		return cidades.get(nome);
 	}
 
+	Collection<Cidade> getCidades() {
+		return Collections.unmodifiableCollection(cidades.values());
+	}
+
 	Collection<Cidade> getCidadesDisponiveis() {
 		List<Cidade> disponiveis = new ArrayList<Cidade>();
 		for (Cidade cidade : cidades.values()) {
@@ -405,6 +413,56 @@ class Tabuleiro {
 		}
 		cidade.conquistar(jogador.getCor(), jogador.retirarYurt());
 		return revelarProximaCidade();
+	}
+
+	// ================================================================= Khan
+
+	String getLugarDoKhan() {
+		return lugarDoKhan;
+	}
+
+	// as 4 províncias do Khan + a área de melhorias
+	List<String> getLugaresDoKhan() {
+		List<String> lugares = new ArrayList<String>();
+		for (Provincia provincia : provincias.values()) {
+			if (provincia.isDoKhan()) {
+				lugares.add(provincia.getId());
+			}
+		}
+		Collections.sort(lugares);
+		lugares.add(AREA_DE_MELHORIAS);
+		return lugares;
+	}
+
+	// o Khan nunca pode ficar onde já está
+	boolean podeMoverKhanPara(String lugar) {
+		return lugar != null && !lugar.equals(lugarDoKhan) && getLugaresDoKhan().contains(lugar);
+	}
+
+	// Só muda o Khan de lugar. Os efeitos (tributos, melhorias) ficam no Jogo,
+	// porque dependem da reserva de peças e da área de melhorias.
+	boolean moverKhan(String lugar) {
+		if (!podeMoverKhanPara(lugar)) {
+			return false;
+		}
+		lugarDoKhan = lugar;
+		return true;
+	}
+
+	// a própria província do Khan e as 2 das setas
+	List<Provincia> getProvinciasDoKhan(String idProvinciaDoKhan) {
+		Provincia provincia = buscarProvincia(idProvinciaDoKhan);
+		List<Provincia> lista = new ArrayList<Provincia>();
+		lista.add(provincia);
+		List<Provincia> alvos = new ArrayList<Provincia>(provincia.getAlvosDoKhan());
+		Collections.sort(alvos, new java.util.Comparator<Provincia>() {
+			@Override
+			public int compare(Provincia a, Provincia b) {
+				return a.getId().compareTo(b.getId());
+			}
+		});
+		lista.addAll(alvos);
+		return lista;
 	}
 
 	// ============================================================ preparação

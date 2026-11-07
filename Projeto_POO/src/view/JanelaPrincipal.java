@@ -1,7 +1,10 @@
 package view;
 
 import java.awt.BorderLayout;
+import java.awt.GraphicsEnvironment;
+import java.awt.Rectangle;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 
 import model.Jogo;
@@ -29,12 +32,31 @@ public class JanelaPrincipal extends JFrame {
 		setLayout(new BorderLayout());
 		add(painelTabuleiro, BorderLayout.CENTER);
 		add(painelLateral, BorderLayout.EAST);
-		setSize(LARGURA, ALTURA);
+		// em notebook a tela é menor que 1000 de altura e o fim da área lateral
+		// ficava escondido atrás da barra de tarefas
+		Rectangle tela = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+		setSize(Math.min(LARGURA, tela.width), Math.min(ALTURA, tela.height));
 		setLocationRelativeTo(null);
 	}
 
 	public PainelTabuleiro getPainelTabuleiro() {
 		return painelTabuleiro;
+	}
+
+	public PainelLateral getPainelLateral() {
+		return painelLateral;
+	}
+
+	public JButton getBotaoPassarVez() {
+		return painelLateral.getBotaoPassarVez();
+	}
+
+	public JButton getBotaoHabilidade() {
+		return painelLateral.getBotaoHabilidade();
+	}
+
+	public void mostrarMensagem(String texto) {
+		painelLateral.mostrarMensagem(texto);
 	}
 
 	/** Lê de novo o estado do jogo e redesenha a tela (depois de uma jogada). */

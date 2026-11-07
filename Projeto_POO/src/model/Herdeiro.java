@@ -34,4 +34,27 @@ enum Herdeiro {
 	boolean comecaComYurtEmKarakorum() {
 		return this == TOLUI;
 	}
+
+	// Habilidades que vêm escritas nas cartelas e mexem nas ações do mapa.
+	// (A do Jochi é de melhorias e ainda não foi feita.)
+
+	// Altani: por turno só um dos 2 peões anda e faz ações
+	boolean usaUmPeaoPorTurno() {
+		return this == ALTANI;
+	}
+
+	// Tolui: pode construir yurt nas paradas vizinhas de onde está
+	boolean constroiYurtAdjacente() {
+		return this == TOLUI;
+	}
+
+	// Ogedei: 1x por turno paga 1 moeda por um tesouro de qualquer cidade (menos o último)
+	boolean compraTesouroComMoeda() {
+		return this == OGEDEI;
+	}
+
+	// Chagatai: 1x por turno troca 1 cavalo (movimento) por 1 espada
+	boolean trocaCavaloPorEspada() {
+		return this == CHAGATAI;
+	}
 }

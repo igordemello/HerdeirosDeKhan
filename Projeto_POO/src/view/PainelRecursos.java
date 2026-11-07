@@ -98,21 +98,24 @@ class PainelRecursos extends JPanel {
 			g2.setColor(FUNDO);
 			g2.fill(new RoundRectangle2D.Double(0, 0, w, getHeight(), 14, 14));
 
-			// votos
-			int y = 10;
+			// votos numa linha só (antes eram duas e cortava o fim do painel)
+			int y = 8;
 			g2.setColor(TINTA);
 			g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
 			FontMetrics fm = g2.getFontMetrics();
-			g2.drawString("Votos no Kurultai", 12, y + fm.getAscent());
-			g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 26));
+			g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
 			FontMetrics fmGrande = g2.getFontMetrics();
-			String votos = String.valueOf(jogo.getVotos(cor));
-			g2.drawString(votos, 12, y + fm.getHeight() + fmGrande.getAscent() - 2);
+			int base = y + fmGrande.getAscent();
+			g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+			String rotuloVotos = "Votos no Kurultai:";
+			g2.drawString(rotuloVotos, 12, base);
+			g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 22));
+			g2.drawString(String.valueOf(jogo.getVotos(cor)), 18 + fm.stringWidth(rotuloVotos), base);
 			g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
 			fm = g2.getFontMetrics();
 			String yurts = "Yurts na reserva: " + jogo.getYurtsNaReserva(cor);
-			g2.drawString(yurts, w - 12 - fm.stringWidth(yurts), y + fm.getAscent());
-			y += 52;
+			g2.drawString(yurts, w - 12 - fm.stringWidth(yurts), base);
+			y = base + 8;
 
 			// tributos
 			y = rotulo(g2, "Peças de tributo", y);

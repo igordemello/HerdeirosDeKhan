@@ -1,8 +1,10 @@
 package model;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /*
@@ -33,6 +35,9 @@ class Cidade {
 	private boolean temYurtDoConquistador;
 
 	private final Map<String, Parada> paradasAdjacentes = new HashMap<String, Parada>();
+	// Tesouros que sobraram na cidade (começa com 4). É lista e não Set
+	// porque pode ter 2 do mesmo tipo.
+	private final List<TipoTesouro> tesouros = new ArrayList<TipoTesouro>();
 
 	Cidade(NomeCidade nome) {
 		if (nome == null) {
@@ -99,6 +104,35 @@ class Cidade {
 		estado = Estado.CONQUISTADA;
 		conquistador = cor;
 		temYurtDoConquistador = colocouYurt;
+	}
+
+	// ---------------------------------------------------------------- tesouros
+
+	void colocarTesouros(List<TipoTesouro> novos) {
+		if (novos == null) {
+			throw new IllegalArgumentException("Lista de tesouros nula");
+		}
+		if (estado != Estado.DISPONIVEL) {
+			throw new IllegalStateException(nome.getNome() + " não está disponível para receber tesouros");
+		}
+		tesouros.addAll(novos);
+	}
+
+	List<TipoTesouro> getTesouros() {
+		return Collections.unmodifiableList(tesouros);
+	}
+
+	boolean temTesouro(TipoTesouro tipo) {
+		return tesouros.contains(tipo);
+	}
+
+	boolean temTesouros() {
+		return !tesouros.isEmpty();
+	}
+
+	// false se a cidade não tem esse tesouro
+	boolean retirarTesouro(TipoTesouro tipo) {
+		return tesouros.remove(tipo);
 	}
 
 	/* Se há um yurt do jogador no meio da cidade. */

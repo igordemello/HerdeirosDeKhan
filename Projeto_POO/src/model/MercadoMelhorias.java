@@ -123,4 +123,23 @@ class MercadoMelhorias {
 		disponiveis.clear();
 		revelar(PECAS_REVELADAS);
 	}
+
+	// Espaços numerados de 0 a 4 da esquerda pra direita. Como as peças andam
+	// pra direita depois de uma compra, os vazios são sempre os da esquerda.
+	// No tabuleiro, o espaço 1 tem o desenho de uma moeda e o 3 de uma espada.
+	static final int ESPACO_DA_MOEDA = 1;
+	static final int ESPACO_DA_ESPADA = 3;
+
+	boolean espacoVazio(int espaco) {
+		return espaco < PECAS_REVELADAS - disponiveis.size();
+	}
+
+	// Usado quando o Khan vai pra área de melhorias: só completa os espaços
+	// vazios (diferente do renovar(), que troca todas).
+	void reporVazios() {
+		int vazios = PECAS_REVELADAS - disponiveis.size();
+		for (int i = 0; i < vazios && !pilha.isEmpty(); i++) {
+			disponiveis.add(0, pilha.remove(pilha.size() - 1));
+		}
+	}
 }

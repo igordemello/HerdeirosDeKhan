@@ -1,6 +1,7 @@
 package model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +51,12 @@ public class Jogo {
 	private int melhoriasGratisPendentes = 0;
 	private int punhosExtrasDaVez = 0;
 
+	// --- ações no mapa (tributos, yurts, ataques, Khan) ---
+	private static final int TESOUROS_POR_CIDADE = 4;
+	/** Lugar do Khan fora das províncias. */
+	public static final String KHAN_NA_AREA_DE_MELHORIAS = Tabuleiro.AREA_DE_MELHORIAS;
+	private final TurnoNoMapa turnoNoMapa = new TurnoNoMapa();
+
 	/**
 	 * Cria e prepara uma partida: jogadores, tabuleiro e cartas.
 	 *
@@ -72,6 +79,8 @@ public class Jogo {
 		for (TipoTributo t : TipoTributo.values()) {
 			virtuaisUsados.put(t, 0);
 		}
+		prepararTesourosDasCidades();
+		turnoNoMapa.iniciar(jogadorDaVez(), tabuleiro);
 	}
 
 	// ------------------------------------------------------------------ vez
@@ -94,7 +103,10 @@ public class Jogo {
 		encerrarTurnoDaVez();
 		colunaAtivadaNaVez = null;
 		movimentosDaVez = 0;
-		return gerenciador.passarVez().getCor().name();
+		Jogador proximo = gerenciador.passarVez();
+		turnoNoMapa.iniciar(proximo, tabuleiro);
+		mudouEstado();
+		return proximo.getCor().name();
 	}
 
 	// ------------------------------------------------- tabuleiro do jogador
@@ -254,12 +266,17 @@ public class Jogo {
 	 * @return ids das paradas em que o peão esteve; lista vazia se não é possível
 	 */
 	public List<String> moverPeaoDaVezAte(int numeroPeao, String idDestino) {
+		if (!turnoNoMapa.podeUsarPeao(numeroPeao)) {
+			return new ArrayList<String>(); // Altani já usou o outro peão neste turno
+		}
 		Cor corDaVez = gerenciador.getJogadorDaVez().getCor();
 		List<String> visitadas = tabuleiro.moverPeaoAte(new Peao(corDaVez, numeroPeao), idDestino, movimentosDaVez);
 		if (!visitadas.isEmpty()) {
 			movimentosDaVez -= visitadas.size() - 1;
 			// paradas feitas no movimento (a de origem não conta), para as entregas
 			paradasVisitadasNaVez.addAll(visitadas.subList(1, visitadas.size()));
+			turnoNoMapa.registrarMovimento(numeroPeao, visitadas); // aqui a origem conta
+			mudouEstado();
 		}
 		return visitadas;
 	}
@@ -578,7 +595,7 @@ public class Jogo {
 	public List<String> getConselheirosAlcancaveis() {
 		List<String> ids = new ArrayList<String>();
 		for (String id : getConselheiros()) {
-			if (paradasVisitadasNaVez.contains(id)) {
+			if (fezParadaNoConselheiro(id)) {
 				ids.add(id);
 			}
 		}
@@ -616,6 +633,7 @@ public class Jogo {
 			j.removerTesouro(t, 1);
 		}
 		tesourosVirtuaisUsados.addAll(virtuais);
+		turnoNoMapa.usarBase(java.util.Collections.singletonList(tabuleiro.getParada(idParada)));
 		Conselheiro c = conselheiro(idParada);
 		j.ganharVotos(c.getVotosPorEntrega());
 		TipoBonus bonus = c.registrarEntrega();
@@ -676,7 +694,7 @@ public class Jogo {
 	 */
 	private List<TipoTesouro> planejarEntrega(String idParada, List<String> nomes) {
 		Conselheiro c = conselho.getConselheiro(idParada);
-		if (c == null || nomes == null || !paradasVisitadasNaVez.contains(idParada)) {
+		if (c == null || nomes == null || !fezParadaNoConselheiro(idParada)) {
 			return null;
 		}
 		List<TipoTesouro> tesouros;
@@ -708,6 +726,12 @@ public class Jogo {
 			}
 		}
 		return usados;
+	}
+
+	// a segunda condição é por causa da Altani: o peão que ela não escolheu
+	// no turno não pode entregar tesouro
+	private boolean fezParadaNoConselheiro(String idParada) {
+		return paradasVisitadasNaVez.contains(idParada) && turnoNoMapa.esteveEm(idParada);
 	}
 
 	private Conselheiro conselheiro(String idParada) {
@@ -938,6 +962,431 @@ public class Jogo {
 			mudouEstado();
 		}
 		return conquistadas;
+	}
+
+	// =====================================================================
+	// Ações no mapa: tributos, yurts, ataques, Khan e habilidades
+	// =====================================================================
+
+	// Paradas onde o peão da vez já esteve no turno (contando a de onde saiu).
+	// É a partir delas que ele pega tributo, constrói yurt e ataca.
+	public List<String> getParadasDoTurno() {
+		List<String> ids = new ArrayList<String>(turnoNoMapa.getParadasDasAcoes());
+		Collections.sort(ids);
+		return ids;
+	}
+
+	// ----------------------------------------------------------- tributos
+
+	public List<String> getProvincias() {
+		List<String> ids = new ArrayList<String>();
+		for (Provincia p : tabuleiro.getProvincias()) {
+			ids.add(p.getId());
+		}
+		Collections.sort(ids);
+		return ids;
+	}
+
+	/** "ESPADA", "YURT" ou "MOEDA". */
+	public String getTipoTributoDaProvincia(String idProvincia) {
+		return tabuleiro.getProvincia(idProvincia).getTipoTributo().name();
+	}
+
+	public int getTributosNaProvincia(String idProvincia) {
+		return tabuleiro.getProvincia(idProvincia).getPecasDeTributo();
+	}
+
+	/** Punhos que ainda sobram no turno (os da coluna + os extras dos bônus). */
+	public int getPunhosDaVez() {
+		return punhosDaColunaRestantes() + punhosExtrasDaVez;
+	}
+
+	private int punhosDaColunaRestantes() {
+		if (colunaAtivadaNaVez == null) {
+			return 0;
+		}
+		int total = jogadorDaVez().getTabuleiro().getPunhos(colunaAtivadaNaVez);
+		return Math.max(0, total - turnoNoMapa.getPunhosUsados());
+	}
+
+	// precisa ter punho, a província não pode estar vazia e tem que ser
+	// vizinha de alguma parada onde o peão passou no turno
+	public boolean podePegarTributo(String idProvincia) {
+		Provincia p = tabuleiro.getProvincia(idProvincia);
+		return getPunhosDaVez() > 0 && !p.estaVazia() && turnoNoMapa.esteveEmAlguma(p.getParadasAdjacentes());
+	}
+
+	public List<String> getProvinciasAlcancaveis() {
+		List<String> ids = new ArrayList<String>();
+		for (String id : getProvincias()) {
+			if (podePegarTributo(id)) {
+				ids.add(id);
+			}
+		}
+		return ids;
+	}
+
+	/** Pega 1 peça da província gastando 1 punho. Retorna false se não puder. */
+	public boolean pegarTributo(String idProvincia) {
+		if (!podePegarTributo(idProvincia)) {
+			return false;
+		}
+		Provincia p = tabuleiro.getProvincia(idProvincia);
+		// gasta primeiro os punhos da coluna, depois os do bônus
+		if (punhosDaColunaRestantes() > 0) {
+			turnoNoMapa.usarPunho();
+		} else {
+			usarPunhoExtraDaVez();
+		}
+		turnoNoMapa.usarBase(p.getParadasAdjacentes());
+		p.retirarTributo(1);
+		jogadorDaVez().adicionarTributo(p.getTipoTributo(), 1);
+		verificarCartasAbertas();
+		mudouEstado();
+		return true;
+	}
+
+	// -------------------------------------------------------------- yurts
+
+	/** Cores dos donos dos yurts da parada. */
+	public List<String> getYurtsNaParada(String idParada) {
+		List<String> cores = new ArrayList<String>();
+		for (Cor c : tabuleiro.getDonosDosYurts(idParada)) {
+			cores.add(c.name());
+		}
+		return cores;
+	}
+
+	// O peão tem que ter passado pela parada (ou ser vizinha, no caso do
+	// Tolui), ela tem que ter espaço (Karakorum não aceita) e o jogador
+	// precisa de um yurt na reserva e de uma peça de yurt pra pagar.
+	public boolean podeConstruirYurt(String idParada) {
+		Parada parada = tabuleiro.getParada(idParada);
+		return (turnoNoMapa.esteveEm(idParada) || vizinhaDoPeaoDeTolui(idParada)) && parada.podeReceberYurt()
+				&& jogadorDaVez().getYurtsDisponiveis() > 0 && getTributoDisponivelDaVez("YURT") > 0;
+	}
+
+	// habilidade do Tolui: pode construir nas paradas vizinhas de onde ele está
+	private boolean vizinhaDoPeaoDeTolui(String idParada) {
+		Jogador j = jogadorDaVez();
+		if (!j.getHerdeiro().constroiYurtAdjacente()) {
+			return false;
+		}
+		Parada atual = tabuleiro.getParadaDoPeao(new Peao(j.getCor(), 1));
+		return atual != null && atual.ehVizinhaDe(idParada);
+	}
+
+	public List<String> getParadasParaYurt() {
+		List<String> ids = new ArrayList<String>();
+		for (String id : getParadas()) {
+			if (podeConstruirYurt(id)) {
+				ids.add(id);
+			}
+		}
+		Collections.sort(ids);
+		return ids;
+	}
+
+	/** Constrói um yurt na parada pagando 1 peça de yurt (a virtual vai primeiro). */
+	public boolean construirYurt(String idParada) {
+		if (!podeConstruirYurt(idParada)) {
+			return false;
+		}
+		Jogador j = jogadorDaVez();
+		if (!tabuleiro.construirYurt(j, idParada)) {
+			return false;
+		}
+		gastarTributo(TipoTributo.YURT, 1);
+		if (turnoNoMapa.esteveEm(idParada)) {
+			turnoNoMapa.usarBase(Collections.singletonList(tabuleiro.getParada(idParada)));
+		}
+		verificarCartasAbertas();
+		mudouEstado();
+		return true;
+	}
+
+	// ------------------------------------------------------------- cidades
+
+	public List<String> getCidades() {
+		List<String> ids = new ArrayList<String>();
+		for (NomeCidade n : NomeCidade.values()) {
+			ids.add(n.name());
+		}
+		Collections.sort(ids);
+		return ids;
+	}
+
+	/** Nome com acento, pra mostrar na tela (ex.: "Bagdá"). */
+	public String getNomeDaCidade(String idCidade) {
+		return nomeCidade(idCidade).getNome();
+	}
+
+	/** "NA_PILHA", "DISPONIVEL" ou "CONQUISTADA". */
+	public String getEstadoDaCidade(String idCidade) {
+		return cidade(idCidade).getEstado().name();
+	}
+
+	public List<String> getTesourosDaCidade(String idCidade) {
+		List<String> nomes = new ArrayList<String>();
+		for (TipoTesouro t : cidade(idCidade).getTesouros()) {
+			nomes.add(t.name());
+		}
+		return nomes;
+	}
+
+	/** Cor de quem conquistou, ou null. */
+	public String getConquistadorDaCidade(String idCidade) {
+		Cor c = cidade(idCidade).getConquistador();
+		return c == null ? null : c.name();
+	}
+
+	// o conquistador pode ter ficado sem yurt pra colocar na cidade
+	public boolean cidadeTemYurt(String idCidade) {
+		Cidade c = cidade(idCidade);
+		return c.getConquistador() != null && c.temYurtDe(c.getConquistador());
+	}
+
+	public int getCidadesNaPilha() {
+		return tabuleiro.getNumeroDeCidadesNaPilha();
+	}
+
+	/** Quantas espadas custa o próximo tesouro dessa cidade neste turno (1 ou 2). */
+	public int getCustoDeAtaque(String idCidade) {
+		return turnoNoMapa.custoDoAtaque(nomeCidade(idCidade));
+	}
+
+	// a cidade tem que estar disponível e ter o tesouro, o peão tem que ter
+	// parado do lado dela no turno e o jogador precisa das espadas
+	public boolean podeAtacar(String idCidade, String tesouro) {
+		Cidade c = cidade(idCidade);
+		TipoTesouro t = tesouroOuNulo(tesouro);
+		if (t == null) {
+			return false;
+		}
+		return c.getEstado() == Cidade.Estado.DISPONIVEL && c.temTesouro(t)
+				&& turnoNoMapa.esteveEmAlguma(c.getParadasAdjacentes())
+				&& getTributoDisponivelDaVez("ESPADA") >= turnoNoMapa.custoDoAtaque(c.getNome());
+	}
+
+	public List<String> getCidadesAtacaveis() {
+		List<String> ids = new ArrayList<String>();
+		for (String id : getCidades()) {
+			for (String t : getTesourosDaCidade(id)) {
+				if (podeAtacar(id, t)) {
+					ids.add(id);
+					break;
+				}
+			}
+		}
+		return ids;
+	}
+
+	/**
+	 * Ataca a cidade e pega o tesouro escolhido. O primeiro tesouro da cidade
+	 * no turno custa 1 espada e os outros custam 2. Quem pega o último
+	 * conquista a cidade e uma nova é revelada com 4 tesouros.
+	 */
+	public boolean atacarCidade(String idCidade, String tesouro) {
+		if (!podeAtacar(idCidade, tesouro)) {
+			return false;
+		}
+		Cidade c = cidade(idCidade);
+		TipoTesouro t = TipoTesouro.valueOf(tesouro);
+		Jogador j = jogadorDaVez();
+		gastarTributo(TipoTributo.ESPADA, turnoNoMapa.custoDoAtaque(c.getNome()));
+		turnoNoMapa.registrarAtaque(c.getNome());
+		turnoNoMapa.usarBase(c.getParadasAdjacentes());
+		c.retirarTesouro(t);
+		j.adicionarTesouro(t, 1);
+		if (!c.temTesouros()) {
+			Cidade revelada = tabuleiro.conquistarCidade(c.getNome(), j);
+			if (revelada != null) { // null quando a pilha de cidades acabou
+				revelada.colocarTesouros(reservaTesouros.comprar(TESOUROS_POR_CIDADE));
+			}
+		}
+		verificarCartasAbertas();
+		mudouEstado();
+		return true;
+	}
+
+	// preparação: 4 tesouros em cada cidade que começa revelada
+	private void prepararTesourosDasCidades() {
+		for (NomeCidade n : NomeCidade.values()) {
+			Cidade c = tabuleiro.getCidade(n);
+			if (c.getEstado() == Cidade.Estado.DISPONIVEL && !c.temTesouros()) {
+				c.colocarTesouros(reservaTesouros.comprar(TESOUROS_POR_CIDADE));
+			}
+		}
+	}
+
+	private Cidade cidade(String idCidade) {
+		return tabuleiro.getCidade(nomeCidade(idCidade));
+	}
+
+	private static NomeCidade nomeCidade(String idCidade) {
+		if (idCidade == null) {
+			throw new IllegalArgumentException("Cidade nula");
+		}
+		return NomeCidade.valueOf(idCidade);
+	}
+
+	private static TipoTesouro tesouroOuNulo(String nome) {
+		try {
+			return TipoTesouro.valueOf(nome);
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
+	// ---------------------------------------------------------------- Khan
+
+	/** Id da província onde o Khan está, "MELHORIAS", ou null antes da 1ª vez. */
+	public String getLugarDoKhan() {
+		return tabuleiro.getLugarDoKhan();
+	}
+
+	/** As 4 províncias do Khan e a área de melhorias. */
+	public List<String> getLugaresDoKhan() {
+		return tabuleiro.getLugaresDoKhan();
+	}
+
+	// A coluna ativada tem o Khan e ele ainda não foi usado. Como usar o Khan
+	// é obrigatório, o Controller não deixa passar a vez enquanto isso for true.
+	public boolean khanPendente() {
+		return colunaAtivadaNaVez != null && jogadorDaVez().getTabuleiro().usaKhan(colunaAtivadaNaVez)
+				&& !turnoNoMapa.khanUsado();
+	}
+
+	// não pode deixar o Khan onde ele já está
+	public boolean podeColocarKhan(String lugar) {
+		return khanPendente() && tabuleiro.podeMoverKhanPara(lugar);
+	}
+
+	/**
+	 * Coloca o Khan. Numa província do Khan, ela e as 2 das setas ganham uma
+	 * peça de tributo cada. Na área de melhorias, o jogador ganha a moeda e/ou
+	 * a espada dos ícones que estiverem descobertos e os espaços vazios
+	 * recebem melhorias novas.
+	 */
+	public boolean colocarKhan(String lugar) {
+		if (!podeColocarKhan(lugar)) {
+			return false;
+		}
+		if (KHAN_NA_AREA_DE_MELHORIAS.equals(lugar)) {
+			// tem que ver os ícones antes de repor as melhorias
+			boolean ganhaMoeda = mercado.espacoVazio(MercadoMelhorias.ESPACO_DA_MOEDA);
+			boolean ganhaEspada = mercado.espacoVazio(MercadoMelhorias.ESPACO_DA_ESPADA);
+			tabuleiro.moverKhan(lugar);
+			if (ganhaMoeda && reservaDe(TipoTributo.MOEDA) > 0) {
+				jogadorDaVez().adicionarTributo(TipoTributo.MOEDA, 1);
+			}
+			if (ganhaEspada && reservaDe(TipoTributo.ESPADA) > 0) {
+				jogadorDaVez().adicionarTributo(TipoTributo.ESPADA, 1);
+			}
+			mercado.reporVazios();
+		} else {
+			tabuleiro.moverKhan(lugar);
+			for (Provincia p : tabuleiro.getProvinciasDoKhan(lugar)) {
+				if (reservaDe(p.getTipoTributo()) > 0) { // se acabou a peça na caixa, não coloca
+					p.adicionarTributo();
+				}
+			}
+		}
+		turnoNoMapa.registrarKhan();
+		verificarCartasAbertas();
+		mudouEstado();
+		return true;
+	}
+
+	// ------------------------------------------- reserva de peças de tributo
+
+	// a caixa do jogo vem com 10 espadas, 10 yurts e 15 moedas
+	private static final Map<TipoTributo, Integer> TRIBUTOS_NA_CAIXA = new EnumMap<TipoTributo, Integer>(
+			TipoTributo.class);
+	static {
+		TRIBUTOS_NA_CAIXA.put(TipoTributo.ESPADA, 10);
+		TRIBUTOS_NA_CAIXA.put(TipoTributo.YURT, 10);
+		TRIBUTOS_NA_CAIXA.put(TipoTributo.MOEDA, 15);
+	}
+
+	/** Peças desse tipo que sobraram na reserva, do lado do tabuleiro. */
+	public int getTributosNaReserva(String tipo) {
+		return reservaDe(TipoTributo.valueOf(tipo));
+	}
+
+	// Não guardamos a reserva num atributo: ela é o total da caixa menos o que
+	// está nas províncias e na mão dos jogadores. Assim a peça gasta "volta"
+	// sozinha pra reserva.
+	private int reservaDe(TipoTributo tipo) {
+		int foraDaReserva = 0;
+		for (Provincia p : tabuleiro.getProvincias()) {
+			if (p.getTipoTributo() == tipo) {
+				foraDaReserva += p.getPecasDeTributo();
+			}
+		}
+		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
+			foraDaReserva += j.getQuantidadeTributo(tipo);
+		}
+		return Math.max(0, TRIBUTOS_NA_CAIXA.get(tipo) - foraDaReserva);
+	}
+
+	// ----------------------------------------------- habilidades (cartelas)
+
+	// Ogedei: 1x por turno paga 1 moeda (pode ser virtual) e pega um tesouro
+	// de qualquer cidade, menos o último. Não precisa estar do lado da cidade
+	// e não conta como ataque.
+	public boolean podePegarTesouroComMoeda(String idCidade, String tesouro) {
+		Cidade c = cidade(idCidade);
+		TipoTesouro t = tesouroOuNulo(tesouro);
+		if (t == null) {
+			return false;
+		}
+		return jogadorDaVez().getHerdeiro().compraTesouroComMoeda() && !turnoNoMapa.habilidadeUsada()
+				&& c.getEstado() == Cidade.Estado.DISPONIVEL && c.getTesouros().size() >= 2 && c.temTesouro(t)
+				&& getTributoDisponivelDaVez("MOEDA") >= 1;
+	}
+
+	public boolean pegarTesouroComMoeda(String idCidade, String tesouro) {
+		if (!podePegarTesouroComMoeda(idCidade, tesouro)) {
+			return false;
+		}
+		TipoTesouro t = TipoTesouro.valueOf(tesouro);
+		gastarTributo(TipoTributo.MOEDA, 1);
+		cidade(idCidade).retirarTesouro(t);
+		jogadorDaVez().adicionarTesouro(t, 1);
+		turnoNoMapa.registrarHabilidade();
+		verificarCartasAbertas();
+		mudouEstado();
+		return true;
+	}
+
+	// Chagatai: 1x por turno deixa de usar 1 cavalo e ganha 1 espada
+	// (a espada é de verdade, pode guardar pra depois)
+	public boolean podeTrocarCavaloPorEspada() {
+		return jogadorDaVez().getHerdeiro().trocaCavaloPorEspada() && !turnoNoMapa.habilidadeUsada()
+				&& movimentosDaVez >= 1 && reservaDe(TipoTributo.ESPADA) > 0;
+	}
+
+	public boolean trocarCavaloPorEspada() {
+		if (!podeTrocarCavaloPorEspada()) {
+			return false;
+		}
+		movimentosDaVez--;
+		jogadorDaVez().adicionarTributo(TipoTributo.ESPADA, 1);
+		turnoNoMapa.registrarHabilidade();
+		verificarCartasAbertas();
+		mudouEstado();
+		return true;
+	}
+
+	/** Usado pela View pra saber se mostra o botão do Chagatai. */
+	public boolean jogadorDaVezTrocaCavaloPorEspada() {
+		return jogadorDaVez().getHerdeiro().trocaCavaloPorEspada();
+	}
+
+	/** Espaço 0 a 4 da área de melhorias (da esquerda pra direita) está vazio? */
+	public boolean espacoDeMelhoriaVazio(int espaco) {
+		return mercado.espacoVazio(espaco);
 	}
 
 	// ----------------------------------------------------------- apoio

@@ -50,6 +50,7 @@ final class ImagensTabuleiroJogador {
 	static final String PASTA_TRIBUTOS = "imagens/tributos/";
 	static final String PASTA_TESOUROS = "imagens/tesouros/";
 	static final String PASTA_BONUS = "imagens/bonus/";
+	static final String PASTA_CARTAS = "imagens/cartas/";
 	private static final String[] EXTENSOES = { ".png", ".jpg", ".jpeg", ".gif" };
 
 	/** Proporção largura/altura do tabuleiro do jogador. */
@@ -77,6 +78,7 @@ final class ImagensTabuleiroJogador {
 	private static final Map<String, Image> CACHE_TRIBUTOS = new HashMap<String, Image>();
 	private static final Map<String, Image> CACHE_TESOUROS = new HashMap<String, Image>();
 	private static final Map<String, Image> CACHE_BONUS = new HashMap<String, Image>();
+	private static final Map<String, Image> CACHE_CARTAS = new HashMap<String, Image>();
 	/** Marca no cache os arquivos procurados e não encontrados, para não procurar de novo. */
 	private static final Image AUSENTE = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
 
@@ -125,6 +127,11 @@ final class ImagensTabuleiroJogador {
 	/** Peça de tesouro pelo nome do tipo no Model (ex.: "SEDA"), ou {@code null}. */
 	static Image getTesouro(String tipo) {
 		return buscar(CACHE_TESOUROS, PASTA_TESOUROS, tipo);
+	}
+
+	/** Carta pelo nome do tipo no Model (ex.: "VIAJANTE", "ESPADAS_4"). */
+	static Image getCarta(String tipo) {
+		return buscar(CACHE_CARTAS, PASTA_CARTAS, tipo);
 	}
 
 	/** Peça de bônus pelo nome do tipo no Model (ex.: "DUAS_ESPADAS"), ou {@code null}. */

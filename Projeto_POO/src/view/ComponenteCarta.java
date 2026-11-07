@@ -8,6 +8,7 @@ import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
@@ -15,16 +16,20 @@ import java.util.List;
 
 import javax.swing.JComponent;
 
-/**
- * Carta de conselheiro desenhada com Java2D (os arquivos do EAD não trazem
- * imagens das cartas). A carta secreta mostra os 3 limiares de votos; a
- * aberta mostra em destaque o número exigido.
+/*
+ * Carta de conselheiro. Mostra a imagem da carta (imagens/cartas/, tirada
+ * do cartas.zip do EAD) com drawImage() e um texto embaixo (ex.: quanto o
+ * jogador já tem do conselheiro secreto). Se a imagem não carregar, desenha
+ * a carta com Java2D como era antes.
  */
 class ComponenteCarta extends JComponent {
 	private static final long serialVersionUID = 1L;
 
 	static final int LARGURA = 168;
-	static final int ALTURA = 228;
+	// as cartas do EAD são mais ou menos 0,64 de largura pra 1 de altura
+	static final int ALTURA_IMAGEM = 262;
+	static final int ALTURA_RODAPE = 34;
+	static final int ALTURA = ALTURA_IMAGEM + ALTURA_RODAPE;
 
 	private static final Color PAPEL = new Color(246, 236, 210);
 	private static final Color BORDA = new Color(140, 104, 52);
@@ -38,24 +43,28 @@ class ComponenteCarta extends JComponent {
 	private final String destaque;
 	private final List<String> linhas;
 	private final String rodape;
+	// null = desenha com Java2D
+	private final Image imagem;
 
 	/** Carta secreta: título, condição, limiares e (opcional) progresso. */
-	static ComponenteCarta secreta(String titulo, String descricao, List<Integer> limiares, String rodape) {
+	static ComponenteCarta secreta(Image imagem, String titulo, String descricao, List<Integer> limiares,
+			String rodape) {
 		List<String> linhas = new ArrayList<String>();
 		for (int i = 0; i < limiares.size(); i++) {
 			linhas.add(limiares.get(i) + "  →  " + (i + 1) + (i == 0 ? " voto" : " votos"));
 		}
-		return new ComponenteCarta(true, titulo, descricao, null, linhas, rodape);
+		return new ComponenteCarta(imagem, true, titulo, descricao, null, linhas, rodape);
 	}
 
 	/** Carta aberta: número exigido em destaque e a condição. */
-	static ComponenteCarta aberta(int quantidade, String descricao, String rodape) {
-		return new ComponenteCarta(false, "Conselheiro aberto", descricao, String.valueOf(quantidade),
+	static ComponenteCarta aberta(Image imagem, int quantidade, String descricao, String rodape) {
+		return new ComponenteCarta(imagem, false, "Conselheiro aberto", descricao, String.valueOf(quantidade),
 				new ArrayList<String>(), rodape);
 	}
 
-	private ComponenteCarta(boolean secreta, String titulo, String descricao, String destaque, List<String> linhas,
-			String rodape) {
+	private ComponenteCarta(Image imagem, boolean secreta, String titulo, String descricao, String destaque,
+			List<String> linhas, String rodape) {
+		this.imagem = imagem;
 		this.secreta = secreta;
 		this.titulo = titulo;
 		this.descricao = descricao;
@@ -68,6 +77,10 @@ class ComponenteCarta extends JComponent {
 
 	@Override
 	protected void paintComponent(Graphics g) {
+		if (imagem != null) {
+			desenharImagem(g);
+			return;
+		}
 		Graphics2D g2 = (Graphics2D) g.create();
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -127,6 +140,37 @@ class ComponenteCarta extends JComponent {
 			List<String> partes = quebrar(rodape, fm, w - 20);
 			yr -= (partes.size() - 1) * fm.getHeight();
 			for (String p : partes) {
+				g2.drawString(p, (w - fm.stringWidth(p)) / 2, yr);
+				yr += fm.getHeight();
+			}
+		}
+		g2.dispose();
+	}
+
+	private void desenharImagem(Graphics g) {
+		Graphics2D g2 = (Graphics2D) g.create();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		int w = getWidth();
+		int areaImagem = getHeight() - ALTURA_RODAPE;
+		int iw = Math.max(1, imagem.getWidth(this));
+		int ih = Math.max(1, imagem.getHeight(this));
+		double escala = Math.min((w - 4.0) / iw, (areaImagem - 4.0) / ih);
+		int dw = (int) Math.round(iw * escala);
+		int dh = (int) Math.round(ih * escala);
+		int x = (w - dw) / 2;
+		int y = (areaImagem - dh) / 2;
+		g2.setColor(new Color(0, 0, 0, 60));
+		g2.fill(new RoundRectangle2D.Double(x + 3, y + 3, dw, dh, 12, 12));
+		g2.drawImage(imagem, x, y, dw, dh, this);
+
+		if (rodape != null) {
+			g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
+			FontMetrics fm = g2.getFontMetrics();
+			g2.setColor(secreta ? CABECALHO_SECRETO : CABECALHO_ABERTO);
+			int yr = areaImagem + fm.getAscent() + 2;
+			for (String p : quebrar(rodape, fm, w - 6)) {
 				g2.drawString(p, (w - fm.stringWidth(p)) / 2, yr);
 				yr += fm.getHeight();
 			}
