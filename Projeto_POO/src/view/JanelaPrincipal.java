@@ -13,6 +13,9 @@ import model.Jogo;
  * Janela do jogo: o tabuleiro principal no centro e a área lateral (jogador
  * da vez e tabuleiro dele) à direita. O enunciado limita as janelas a
  * 1400 x 1050 pixels.
+ *
+ * Mostra a partida em andamento ({@link Jogo#getInstancia()}). Os painéis
+ * são observadores da partida e se redesenham sozinhos quando ela muda.
  */
 public class JanelaPrincipal extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -23,8 +26,9 @@ public class JanelaPrincipal extends JFrame {
 	private final PainelTabuleiro painelTabuleiro;
 	private final PainelLateral painelLateral;
 
-	public JanelaPrincipal(Jogo jogo) {
+	public JanelaPrincipal() {
 		super("Herdeiros do Khan");
+		Jogo jogo = Jogo.getInstancia();
 		painelTabuleiro = new PainelTabuleiro(jogo);
 		painelLateral = new PainelLateral(jogo);
 
@@ -59,9 +63,8 @@ public class JanelaPrincipal extends JFrame {
 		painelLateral.mostrarMensagem(texto);
 	}
 
-	/** Lê de novo o estado do jogo e redesenha a tela (depois de uma jogada). */
-	public void atualizar() {
-		painelLateral.atualizar();
-		painelTabuleiro.repaint();
+	/** Escolha dos conselheiros secretos, um jogador de cada vez (antes da 1ª rodada). */
+	public void escolherConselheirosSecretos() {
+		painelLateral.escolherConselheirosSecretos();
 	}
 }

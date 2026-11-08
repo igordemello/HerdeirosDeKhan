@@ -22,6 +22,8 @@ import java.util.Set;
 import javax.swing.JPanel;
 
 import model.Jogo;
+import model.ObservadoIF;
+import model.ObservadorIF;
 
 /*
  * Tabuleiro principal. Desenha a imagem do mapa com drawImage() e, por cima,
@@ -34,8 +36,11 @@ import model.Jogo;
  * A imagem é reduzida pra caber no painel; a escala fica guardada pra
  * converter o clique de volta em coordenada da imagem (os métodos ...Em).
  * Quem decide o que fazer com o clique é o Controller.
+ *
+ * É observador da partida: quando o estado muda (um peão anda, um tributo é
+ * pego...), o Model avisa e o painel se redesenha.
  */
-public class PainelTabuleiro extends JPanel {
+public class PainelTabuleiro extends JPanel implements ObservadorIF {
 	private static final long serialVersionUID = 1L;
 
 	// medidas em pixels da imagem original
@@ -53,6 +58,12 @@ public class PainelTabuleiro extends JPanel {
 
 	public PainelTabuleiro(Jogo jogo) {
 		this.jogo = jogo;
+		jogo.add(this);
+	}
+
+	@Override
+	public void notify(ObservadoIF o) {
+		repaint();
 	}
 
 	// ---------------------------------------- o que tem no ponto clicado

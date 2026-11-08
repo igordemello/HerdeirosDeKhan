@@ -4,45 +4,56 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.SwingUtilities;
 
 import model.Jogo;
+import view.JanelaFimDeJogo;
 import view.JanelaPrincipal;
 import view.PainelTabuleiro;
 
 /*
- * Controla a jogada.
+ * Controla a sequência de uma partida.
  *
- * O jogador ativa uma coluna na área lateral e depois, na ordem que quiser,
- * clica no tabuleiro:
+ * Antes da primeira rodada, cada jogador escolhe o seu conselheiro secreto.
+ * No turno, o jogador ativa uma coluna na área lateral e depois, na ordem que
+ * quiser, clica no tabuleiro:
  *  - numa parada: move o peão
  *  - num tributo: pega a peça
  *  - num tesouro: ataca a cidade
  *  - num lugar do Khan: coloca o Khan
  *  - botão direito numa parada: constrói yurt
  *  - botão direito num tesouro: habilidade do Ogedei
- * O botão "Passar a vez" termina o turno (fica travado enquanto o Khan for
- * obrigatório e não tiver sido usado).
+ * O botão "Passar a vez" termina o turno, mas só depois de o jogador ativar
+ * uma coluna e de usar o Khan, quando a coluna obrigar.
  *
- * Quem diz se a ação vale é o Model; aqui só chamamos e mostramos o
- * resultado na área lateral. Os tratadores de evento são classes internas
- * porque o enunciado proíbe lambda nos eventos.
+ * Quando o fim do jogo é disparado (pág. 14), a rodada atual termina, todos
+ * jogam mais uma vez e a partida acaba com a janela de resultado.
+ *
+ * Quem diz se a ação vale é o Model; aqui só chamamos e mostramos uma
+ * mensagem. A tela não é redesenhada aqui: o Model avisa os observadores
+ * (padrão Observer). Os tratadores de evento são classes internas porque o
+ * enunciado proíbe lambda nos eventos.
  */
 public class ControladorJogo {
-	private final Jogo jogo;
+	private final Jogo jogo = Jogo.getInstancia();
 	private final JanelaPrincipal janela;
+	/** Turnos que ainda serão jogados depois que o fim foi disparado; -1 = ainda não disparou. */
+	private int turnosAteOFim = -1;
 
-	public ControladorJogo(Jogo jogo, JanelaPrincipal janela) {
-		this.jogo = jogo;
+	public ControladorJogo(JanelaPrincipal janela) {
 		this.janela = janela;
 		janela.getPainelTabuleiro().addMouseListener(new TratadorCliqueNoTabuleiro());
 		janela.getBotaoPassarVez().addActionListener(new TratadorPassarVez());
 		janela.getBotaoHabilidade().addActionListener(new TratadorHabilidade());
-		janela.getPainelLateral().addPropertyChangeListener("movimentos", new TratadorMovimentos());
+	}
+
+	/** Mostra o tabuleiro e faz a escolha dos conselheiros secretos (pág. 6). */
+	public void iniciar() {
+		janela.setVisible(true);
+		janela.escolherConselheirosSecretos();
+		janela.mostrarMensagem("Começa " + jogo.getJogadorDaVez() + ".");
 	}
 
 	// ------------------------------------------------------- ações no mapa
@@ -86,7 +97,6 @@ public class ControladorJogo {
 			} else {
 				janela.mostrarMensagem("Pegar tesouro com moeda: só Ogedei, 1x por turno, não o último.");
 			}
-			janela.atualizar();
 			return;
 		}
 		String parada = painel.paradaEm(x, y);
@@ -101,18 +111,16 @@ public class ControladorJogo {
 		} else {
 			janela.mostrarMensagem("Troca só 1x por turno e com um movimento sobrando.");
 		}
-		janela.atualizar();
 	}
 
 	// Move o peão até a parada (na Altani tenta o peão 1 e depois o 2). Se não
 	// der pra mover, por exemplo clicando onde o peão já está, tenta construir
-	// um yurt ali. Mover não passa mais a vez.
+	// um yurt ali. Mover não passa a vez.
 	void paradaClicada(String idParada) {
 		String cor = jogo.getJogadorDaVez();
 		for (int n = 1; n <= jogo.getNumeroDePeoes(cor); n++) {
 			if (!jogo.moverPeaoDaVezAte(n, idParada).isEmpty()) {
 				janela.mostrarMensagem("Peão movido para " + idParada + ".");
-				janela.atualizar();
 				return;
 			}
 		}
@@ -130,7 +138,6 @@ public class ControladorJogo {
 		} else {
 			janela.mostrarMensagem(provincia + " vazia ou longe das paradas do turno.");
 		}
-		janela.atualizar();
 	}
 
 	private void construirYurt(String parada) {
@@ -139,7 +146,6 @@ public class ControladorJogo {
 		} else {
 			janela.mostrarMensagem("Não dá para construir yurt em " + parada + ".");
 		}
-		janela.atualizar();
 	}
 
 	private void atacar(String cidade, String tesouro) {
@@ -155,7 +161,6 @@ public class ControladorJogo {
 			janela.mostrarMensagem("Ataque recusado: precisa de " + custo + (custo == 1 ? " espada" : " espadas")
 					+ " e de parada vizinha.");
 		}
-		janela.atualizar();
 	}
 
 	private void colocarKhan(String lugar) {
@@ -166,20 +171,43 @@ public class ControladorJogo {
 		} else {
 			janela.mostrarMensagem("O Khan não pode ficar onde já está.");
 		}
-		janela.atualizar();
 	}
 
-	// ----------------------------------------------------------------- vez
+	// ------------------------------------------------------ vez e fim de jogo
 
 	void passarVez() {
-		if (jogo.khanPendente()) {
-			janela.mostrarMensagem("Use o Khan antes de passar a vez.");
-			janela.atualizar();
+		if (jogo.getColunaAtivadaNaVez() == null) {
+			janela.mostrarMensagem("Ative uma coluna antes de passar a vez.");
 			return;
 		}
+		if (jogo.khanPendente()) {
+			janela.mostrarMensagem("Use o Khan antes de passar a vez.");
+			return;
+		}
+		List<String> ordem = jogo.getCores();
+		int posicao = ordem.indexOf(jogo.getJogadorDaVez());
+		if (turnosAteOFim < 0 && jogo.fimDeJogoDisparado()) {
+			// os que faltam nesta rodada + uma rodada completa (pág. 14)
+			turnosAteOFim = (ordem.size() - 1 - posicao) + ordem.size();
+		} else if (turnosAteOFim > 0) {
+			turnosAteOFim--;
+		}
+
 		jogo.passarVez();
-		janela.mostrarMensagem("");
-		janela.atualizar();
+		if (turnosAteOFim == 0) {
+			encerrarPartida();
+		} else if (turnosAteOFim > 0) {
+			janela.mostrarMensagem("Fim de jogo disparado: faltam " + turnosAteOFim + " turno(s).");
+		} else {
+			janela.mostrarMensagem("");
+		}
+	}
+
+	/** Mostra o resultado e, quando a janela dele é fechada, volta para o início. */
+	private void encerrarPartida() {
+		new JanelaFimDeJogo(janela, jogo).setVisible(true); // modal: espera fechar
+		new ControladorInicio();
+		janela.dispose();
 	}
 
 	// ------------------------------------------------- tratadores de eventos
@@ -207,26 +235,5 @@ public class ControladorJogo {
 		public void actionPerformed(ActionEvent e) {
 			trocarCavaloPorEspada();
 		}
-	}
-
-	// a área lateral avisa quando os movimentos mudam (coluna, bônus ou combo de teste)
-	private class TratadorMovimentos implements PropertyChangeListener {
-		@Override
-		public void propertyChange(PropertyChangeEvent e) {
-			janela.atualizar();
-		}
-	}
-
-	/** Abre o jogo com uma partida de 5 jogadores (as janelas iniciais ficam para depois). */
-	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				Jogo jogo = new Jogo(Arrays.asList("VERMELHO", "AZUL", "AMARELO", "VERDE", "ROXO"));
-				JanelaPrincipal janela = new JanelaPrincipal(jogo);
-				new ControladorJogo(jogo, janela);
-				janela.setVisible(true);
-			}
-		});
 	}
 }

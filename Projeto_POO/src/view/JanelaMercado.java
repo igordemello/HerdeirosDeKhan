@@ -16,31 +16,34 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import model.Jogo;
+import model.ObservadoIF;
+import model.ObservadorIF;
 
 /**
  * Janela da área de melhorias: mostra as peças disponíveis e o topo da
  * pilha, e permite comprar uma melhoria com 2 moedas (pág. 11). Quando o
  * jogador completa uma linha, a mesma janela é usada para escolher a
  * melhoria grátis da coluna branca (pág. 12).
+ *
+ * É observadora da partida e se atualiza sozinha quando o estado muda.
  */
-class JanelaMercado extends JDialog {
+class JanelaMercado extends JDialog implements ObservadorIF {
 	private static final long serialVersionUID = 1L;
 	/** Índice que, na API do Model, representa o topo da pilha. */
 	private static final int TOPO = -1;
 	private static final int NENHUMA = -2;
 
 	private final Jogo jogo;
-	private final PainelLateral lateral;
 	private final JPanel pecas = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
 	private final JLabel titulo = new JLabel();
 	private final JLabel situacao = new JLabel();
 	private final JButton botaoComprar = new JButton();
 	private int selecionada = NENHUMA;
 
-	JanelaMercado(Window dono, Jogo jogo, PainelLateral lateral) {
+	JanelaMercado(Window dono, Jogo jogo) {
 		super(dono, "Melhorias", ModalityType.MODELESS);
 		this.jogo = jogo;
-		this.lateral = lateral;
+		jogo.add(this);
 
 		titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 15f));
 		JPanel topo = new JPanel(new BorderLayout(0, 4));
@@ -59,6 +62,17 @@ class JanelaMercado extends JDialog {
 		setSize(980, 260);
 		setLocationRelativeTo(dono);
 		atualizar();
+	}
+
+	@Override
+	public void notify(ObservadoIF o) {
+		atualizar();
+	}
+
+	@Override
+	public void dispose() {
+		jogo.remove(this);
+		super.dispose();
 	}
 
 	private boolean modoGratis() {
@@ -127,10 +141,10 @@ class JanelaMercado extends JDialog {
 			boolean ok = modoGratis() ? jogo.escolherMelhoriaGratis(selecionada) : jogo.comprarMelhoria(selecionada);
 			if (ok) {
 				selecionada = NENHUMA;
+				atualizar(); // o Model já avisou; aqui é só para tirar a seleção
 			} else if (selecionada == TOPO) {
 				situacao.setText("A peça do topo não cabia no seu tabuleiro e voltou para o fundo da pilha.");
 			}
-			lateral.atualizar();
 		}
 	}
 }

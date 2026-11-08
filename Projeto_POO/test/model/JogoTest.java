@@ -42,7 +42,7 @@ public class JogoTest {
 		tabuleiro.ligarParadas(K, "C1");
 		tabuleiro.ligarParadas("C1", "P1");
 		tabuleiro.ligarParadas("P1", "P2");
-		jogo = new Jogo(Arrays.asList(Cor.AZUL, Cor.VERDE, Cor.ROXO), tabuleiro, new Random(42));
+		jogo = Jogo.novaPartida(Arrays.asList(Cor.AZUL, Cor.VERDE, Cor.ROXO), tabuleiro, new Random(42));
 	}
 
 	/**
@@ -127,5 +127,44 @@ public class JogoTest {
 		assertTrue(jogo.moverPeao("AZUL", 2, Arrays.asList("C1"), 1));
 		assertTrue(jogo.moverPeao("VERDE", 1, Arrays.asList("C1", "P1"), 2));
 		assertEquals(Arrays.asList("AZUL"), jogo.getVencedores());
+	}
+
+	/**
+	 * Objetivo: verificar o padrão Observer: os observadores cadastrados são
+	 * avisados quando o estado da partida muda, e só nesse caso.
+	 *
+	 * Cenário: um observador que conta os avisos e, a cada aviso, pede ao
+	 * observado (get) a posição do jogador da vez. AZUL tenta um movimento
+	 * impossível, ativa a coluna vermelha e passa a vez; depois o observador
+	 * é removido e VERDE ativa uma coluna.
+	 *
+	 * Resultado esperado: o movimento recusado não avisa; ativar a coluna e
+	 * passar a vez avisam (2 avisos); no último aviso a vez é do 2º jogador
+	 * (posição 1); depois de removido, o observador não é mais avisado.
+	 */
+	@Test
+	public void observadoresSaoAvisadosQuandoOEstadoMuda() {
+		final int[] avisos = { 0 };
+		final int[] vez = { -1 };
+		ObservadorIF contador = new ObservadorIF() {
+			@Override
+			public void notify(ObservadoIF o) {
+				avisos[0]++;
+				vez[0] = o.get(Jogo.VEZ);
+			}
+		};
+		jogo.add(contador);
+
+		assertFalse(jogo.moverPeao("AZUL", 1, Arrays.asList("C1", "P2"), 5));
+		assertEquals(0, avisos[0]);
+		assertTrue(jogo.ativarColuna("VERMELHA"));
+		assertEquals(0, vez[0]);
+		jogo.passarVez();
+		assertEquals(2, avisos[0]);
+		assertEquals(1, vez[0]);
+
+		jogo.remove(contador);
+		assertTrue(jogo.ativarColuna("VERMELHA"));
+		assertEquals(2, avisos[0]);
 	}
 }

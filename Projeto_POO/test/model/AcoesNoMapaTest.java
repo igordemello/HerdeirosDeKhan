@@ -31,7 +31,7 @@ public class AcoesNoMapaTest {
 	@Before
 	public void setUp() {
 		tabuleiro = FabricaTabuleiro.criarTabuleiroPadrao();
-		jogo = new Jogo(Arrays.asList(Cor.AZUL, Cor.VERDE), tabuleiro, new Random(7));
+		jogo = Jogo.novaPartida(Arrays.asList(Cor.AZUL, Cor.VERDE), tabuleiro, new Random(7));
 		azul = jogo.getJogador(Cor.AZUL);
 	}
 
@@ -331,7 +331,7 @@ public class AcoesNoMapaTest {
 	@Test
 	public void toluiConstroiYurtNasParadasVizinhas() {
 		Tabuleiro t = FabricaTabuleiro.criarTabuleiroPadrao();
-		Jogo j = new Jogo(Arrays.asList(Cor.ROXO, Cor.AZUL), t, new Random(3));
+		Jogo j = Jogo.novaPartida(Arrays.asList(Cor.ROXO, Cor.AZUL), t, new Random(3));
 		j.getJogador(Cor.ROXO).adicionarTributo(TipoTributo.YURT, 2);
 		assertTrue(j.podeConstruirYurt("R08"));
 		assertFalse(j.podeConstruirYurt("R09"));
@@ -355,7 +355,7 @@ public class AcoesNoMapaTest {
 	@Test
 	public void ogedeiPegaTesouroComMoeda() {
 		Tabuleiro t = FabricaTabuleiro.criarTabuleiroPadrao();
-		Jogo j = new Jogo(Arrays.asList(Cor.AMARELO, Cor.AZUL), t, new Random(5));
+		Jogo j = Jogo.novaPartida(Arrays.asList(Cor.AMARELO, Cor.AZUL), t, new Random(5));
 		Jogador ogedei = j.getJogador(Cor.AMARELO);
 		ogedei.adicionarTributo(TipoTributo.MOEDA, 1); // já tinha 1
 		Cidade c = t.getCidadesDisponiveis().iterator().next();
@@ -388,7 +388,7 @@ public class AcoesNoMapaTest {
 	@Test
 	public void chagataiTrocaCavaloPorEspada() {
 		Tabuleiro t = FabricaTabuleiro.criarTabuleiroPadrao();
-		Jogo j = new Jogo(Arrays.asList(Cor.VERMELHO, Cor.AZUL), t, new Random(5));
+		Jogo j = Jogo.novaPartida(Arrays.asList(Cor.VERMELHO, Cor.AZUL), t, new Random(5));
 		assertFalse(j.trocarCavaloPorEspada());
 		assertTrue(j.ativarColuna("VERDE"));
 		assertEquals(1, j.getMovimentosDaVez());

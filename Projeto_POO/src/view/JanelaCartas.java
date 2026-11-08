@@ -18,6 +18,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import model.Jogo;
+import model.ObservadoIF;
+import model.ObservadorIF;
 
 /**
  * Janela de cartas do jogador da vez:
@@ -30,25 +32,27 @@ import model.Jogo;
  * </ul>
  * {@link #escolherConselheirosSecretos(Window, Jogo)} abre a escolha para
  * cada jogador, um de cada vez, no início da partida.
+ *
+ * É observadora da partida: enquanto existir, se atualiza sozinha quando o
+ * estado muda (ex.: a vez passa ou o jogador conquista uma carta).
  */
-class JanelaCartas extends JDialog {
+class JanelaCartas extends JDialog implements ObservadorIF {
 	private static final long serialVersionUID = 1L;
 
 	private final Jogo jogo;
-	private final PainelLateral lateral;
 	/** Jogador mostrado; {@code null} = o jogador da vez. */
 	private final String corFixa;
 	private final JPanel conteudo = new JPanel();
 
-	JanelaCartas(Window dono, Jogo jogo, PainelLateral lateral) {
-		this(dono, jogo, lateral, null, ModalityType.MODELESS);
+	JanelaCartas(Window dono, Jogo jogo) {
+		this(dono, jogo, null, ModalityType.MODELESS);
 	}
 
-	private JanelaCartas(Window dono, Jogo jogo, PainelLateral lateral, String corFixa, ModalityType modo) {
+	private JanelaCartas(Window dono, Jogo jogo, String corFixa, ModalityType modo) {
 		super(dono, "Cartas de conselheiro", modo);
 		this.jogo = jogo;
-		this.lateral = lateral;
 		this.corFixa = corFixa;
+		jogo.add(this);
 		conteudo.setLayout(new BoxLayout(conteudo, BoxLayout.Y_AXIS));
 		conteudo.setBorder(BorderFactory.createEmptyBorder(8, 12, 12, 12));
 		setLayout(new BorderLayout());
@@ -68,9 +72,20 @@ class JanelaCartas extends JDialog {
 	static void escolherConselheirosSecretos(Window dono, Jogo jogo) {
 		for (String cor : jogo.getCores()) {
 			if (jogo.getConselheiroSecreto(cor) == null) {
-				new JanelaCartas(dono, jogo, null, cor, ModalityType.APPLICATION_MODAL).setVisible(true);
+				new JanelaCartas(dono, jogo, cor, ModalityType.APPLICATION_MODAL).setVisible(true);
 			}
 		}
+	}
+
+	@Override
+	public void notify(ObservadoIF o) {
+		atualizar();
+	}
+
+	@Override
+	public void dispose() {
+		jogo.remove(this);
+		super.dispose();
 	}
 
 	private String cor() {
@@ -167,13 +182,9 @@ class JanelaCartas extends JDialog {
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			jogo.escolherConselheiroSecreto(cor, tipo);
+			jogo.escolherConselheiroSecreto(cor, tipo); // o Model avisa os observadores
 			if (corFixa != null) {
 				dispose(); // escolha do início da partida: passa para o próximo jogador
-			} else if (lateral != null) {
-				lateral.atualizar();
-			} else {
-				atualizar();
 			}
 		}
 	}

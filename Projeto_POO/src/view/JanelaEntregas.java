@@ -21,24 +21,27 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import model.Jogo;
+import model.ObservadoIF;
+import model.ObservadorIF;
 
 /**
  * Janela de entregas de tesouros aos conselheiros (págs. 12-13). Mostra os
  * tesouros do jogador da vez e, para cada conselheiro em que ele fez parada
  * neste turno, o pedido, os votos e a peça de bônus que ainda está lá.
+ *
+ * É observadora da partida e se atualiza sozinha quando o estado muda.
  */
-class JanelaEntregas extends JDialog {
+class JanelaEntregas extends JDialog implements ObservadorIF {
 	private static final long serialVersionUID = 1L;
 
 	private final Jogo jogo;
-	private final PainelLateral lateral;
 	private final JPanel conteudo = new JPanel();
 	private final JLabel mensagem = new JLabel(" ");
 
-	JanelaEntregas(Window dono, Jogo jogo, PainelLateral lateral) {
+	JanelaEntregas(Window dono, Jogo jogo) {
 		super(dono, "Entregar tesouros", ModalityType.MODELESS);
 		this.jogo = jogo;
-		this.lateral = lateral;
+		jogo.add(this);
 		conteudo.setLayout(new BoxLayout(conteudo, BoxLayout.Y_AXIS));
 		conteudo.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
 		mensagem.setBorder(BorderFactory.createEmptyBorder(4, 14, 8, 14));
@@ -49,6 +52,17 @@ class JanelaEntregas extends JDialog {
 		setSize(760, 520);
 		setLocationRelativeTo(dono);
 		atualizar();
+	}
+
+	@Override
+	public void notify(ObservadoIF o) {
+		atualizar();
+	}
+
+	@Override
+	public void dispose() {
+		jogo.remove(this);
+		super.dispose();
 	}
 
 	void atualizar() {
@@ -170,7 +184,6 @@ class JanelaEntregas extends JDialog {
 			} else {
 				mensagem.setText("Você não tem esses tesouros.");
 			}
-			lateral.atualizar();
 		}
 	}
 

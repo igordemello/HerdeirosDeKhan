@@ -237,12 +237,10 @@ class PainelRecursos extends JPanel {
 				int resposta = JOptionPane.showConfirmDialog(PainelRecursos.this,
 						"Usar a peça de bônus \"" + jogo.getDescricaoBonus(tipo) + "\"?\nEla só pode ser usada uma vez.",
 						"Peça de bônus", JOptionPane.YES_NO_OPTION);
-				if (resposta == JOptionPane.YES_OPTION && jogo.usarBonus(tipo)) {
-					if (!jogo.getTesourosDoBonusParaEscolher().isEmpty()) {
-						EscolhaDeTesouro.mostrar(PainelRecursos.this, jogo);
-					}
-					lateral.atualizar();
-					lateral.firePropertyChangeMovimentos();
+				// usarBonus avisa os observadores, então a tela se atualiza sozinha
+				if (resposta == JOptionPane.YES_OPTION && jogo.usarBonus(tipo)
+						&& !jogo.getTesourosDoBonusParaEscolher().isEmpty()) {
+					EscolhaDeTesouro.mostrar(PainelRecursos.this, jogo);
 				}
 			}
 		}

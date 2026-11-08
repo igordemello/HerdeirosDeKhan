@@ -3,6 +3,7 @@ package model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,10 +16,25 @@ import java.util.Set;
  * tipos simples (String, int, boolean), já que as classes do jogo não são
  * públicas. As cores são passadas pelo nome ("AZUL", "VERMELHO", ...).
  *
- * Na 3ª iteração esta classe vai virar o Singleton/Façade pedido no
- * enunciado.
+ * Padrões usados (3ª iteração):
+ * <ul>
+ * <li>Façade: o View e o Controller só falam com esta classe, que repassa
+ * os pedidos para o tabuleiro, os jogadores, as cartas etc.;</li>
+ * <li>Singleton: só existe uma partida por vez, criada por
+ * {@link #novaPartida(List)} e obtida por {@link #getInstancia()};</li>
+ * <li>Observer: a partida é o observado. Toda ação que muda o estado chama
+ * {@code mudouEstado()}, que avisa os observadores (a interface gráfica).</li>
+ * </ul>
  */
-public class Jogo {
+public class Jogo implements ObservadoIF {
+	/** Códigos para {@link #get(int)}. */
+	public static final int VEZ = 1;
+	public static final int MOVIMENTOS = 2;
+
+	private static Jogo instancia;
+
+	private final List<ObservadorIF> observadores = new ArrayList<ObservadorIF>();
+
 	/** Votos da ficha branca que disparam o fim do jogo para 2/3/4/5 jogadores (pág. 14). */
 	private static final int[] VOTOS_PARA_O_FIM = { 10, 14, 16, 17 };
 
@@ -57,17 +73,48 @@ public class Jogo {
 	public static final String KHAN_NA_AREA_DE_MELHORIAS = Tabuleiro.AREA_DE_MELHORIAS;
 	private final TurnoNoMapa turnoNoMapa = new TurnoNoMapa();
 
+	// ------------------------------------------------------------ Singleton
+
 	/**
-	 * Cria e prepara uma partida: jogadores, tabuleiro e cartas.
+	 * Cria e prepara uma nova partida (jogadores, tabuleiro e cartas), que
+	 * passa a ser a única instância do jogo.
 	 *
 	 * @param coresEmOrdemDeJogo nomes das cores escolhidas, na ordem de jogo
 	 */
-	public Jogo(List<String> coresEmOrdemDeJogo) {
-		this(converterCores(coresEmOrdemDeJogo), FabricaTabuleiro.criarTabuleiroPadrao(), new Random());
+	public static Jogo novaPartida(List<String> coresEmOrdemDeJogo) {
+		return novaPartida(converterCores(coresEmOrdemDeJogo), FabricaTabuleiro.criarTabuleiroPadrao(), new Random());
 	}
 
-	/** Usado pelos testes, com um mapa pequeno e semente fixa. */
-	Jogo(List<Cor> cores, Tabuleiro tabuleiro, Random aleatorio) {
+	/** Usado também pelos testes, com um mapa pequeno e semente fixa. */
+	static Jogo novaPartida(List<Cor> cores, Tabuleiro tabuleiro, Random aleatorio) {
+		instancia = new Jogo(cores, tabuleiro, aleatorio);
+		return instancia;
+	}
+
+	/** A partida em andamento. */
+	public static Jogo getInstancia() {
+		if (instancia == null) {
+			throw new IllegalStateException("Nenhuma partida foi criada");
+		}
+		return instancia;
+	}
+
+	/** Cores que podem ser escolhidas na janela inicial. */
+	public static List<String> getCoresPossiveis() {
+		List<String> cores = new ArrayList<String>();
+		for (Cor c : Cor.values()) {
+			cores.add(c.name());
+		}
+		return cores;
+	}
+
+	/** Herdeiro associado à cor (ex.: "Tolui"), antes mesmo de a partida existir. */
+	public static String getHerdeiroDaCor(String cor) {
+		return cor(cor).getHerdeiro().getNome();
+	}
+
+	/** Privado (Singleton): toda partida é criada por {@code novaPartida}. */
+	private Jogo(List<Cor> cores, Tabuleiro tabuleiro, Random aleatorio) {
 		this.gerenciador = new GerenciadorJogadores(cores);
 		this.tabuleiro = tabuleiro;
 		this.distribuidor = new DistribuidorCartas(aleatorio);
@@ -201,6 +248,7 @@ public class Jogo {
 		movimentosDaVez = tab.getCavalos(c); // conta antes de recuperar as fichas
 		tab.ativar(c);
 		colunaAtivadaNaVez = c;
+		mudouEstado();
 		return true;
 	}
 
@@ -223,6 +271,7 @@ public class Jogo {
 			throw new IllegalArgumentException("Movimentos negativos: " + movimentos);
 		}
 		movimentosDaVez = movimentos;
+		mudouEstado();
 	}
 
 	// ------------------------------------------------------------ movimento
@@ -236,7 +285,11 @@ public class Jogo {
 	 * @return {@code false} se o movimento não respeita as regras
 	 */
 	public boolean moverPeao(String cor, int numeroPeao, List<String> caminho, int movimentos) {
-		return tabuleiro.moverPeao(new Peao(cor(cor), numeroPeao), caminho, movimentos);
+		boolean moveu = tabuleiro.moverPeao(new Peao(cor(cor), numeroPeao), caminho, movimentos);
+		if (moveu) {
+			mudouEstado();
+		}
+		return moveu;
 	}
 
 	/**
@@ -250,7 +303,11 @@ public class Jogo {
 	 *         possível, e nesse caso nada muda
 	 */
 	public List<String> moverPeaoAte(String cor, int numeroPeao, String idDestino, int movimentos) {
-		return tabuleiro.moverPeaoAte(new Peao(cor(cor), numeroPeao), idDestino, movimentos);
+		List<String> visitadas = tabuleiro.moverPeaoAte(new Peao(cor(cor), numeroPeao), idDestino, movimentos);
+		if (!visitadas.isEmpty()) {
+			mudouEstado();
+		}
+		return visitadas;
 	}
 
 	/** Se o peão consegue chegar à parada com esses movimentos (nada muda). */
@@ -357,7 +414,11 @@ public class Jogo {
 	 * da coluna ativada. Se não houver o suficiente, nada muda.
 	 */
 	public boolean gastarTributoDaVez(String tipo, int quantidade) {
-		return gastarTributo(TipoTributo.valueOf(tipo), quantidade);
+		boolean gastou = gastarTributo(TipoTributo.valueOf(tipo), quantidade);
+		if (gastou) {
+			mudouEstado();
+		}
+		return gastou;
 	}
 
 	private boolean gastarTributo(TipoTributo tipo, int quantidade) {
@@ -413,6 +474,7 @@ public class Jogo {
 			return false;
 		}
 		punhosExtrasDaVez--;
+		mudouEstado();
 		return true;
 	}
 
@@ -1415,12 +1477,42 @@ public class Jogo {
 		punhosExtrasDaVez = 0;
 	}
 
+	// ------------------------------------------------------------- Observer
+
+	@Override
+	public void add(ObservadorIF o) {
+		observadores.add(o);
+	}
+
+	@Override
+	public void remove(ObservadorIF o) {
+		observadores.remove(o);
+	}
+
 	/**
-	 * Ponto único de aviso de mudança de estado. Quando as interfaces do
-	 * Observer existirem, este método deve notificar os observadores.
+	 * Callback dos observadores (Capítulo 17): devolve um dado do estado
+	 * pelo código. Os demais dados são lidos pelos métodos da Façade.
+	 *
+	 * @param i {@link #VEZ} (posição do jogador da vez na ordem de jogo) ou
+	 *          {@link #MOVIMENTOS} (movimentos do jogador da vez)
 	 */
+	@Override
+	public int get(int i) {
+		if (i == VEZ) {
+			return getCores().indexOf(getJogadorDaVez());
+		}
+		if (i == MOVIMENTOS) {
+			return movimentosDaVez;
+		}
+		throw new IllegalArgumentException("Código inválido: " + i);
+	}
+
+	/** Ponto único de aviso de mudança de estado: notifica todos os observadores. */
 	private void mudouEstado() {
-		// será ligado ao Observer (parte do Igor)
+		// cópia: um observador pode se cadastrar ou sair durante o aviso (ex.: abrir uma janela)
+		for (ObservadorIF o : new ArrayList<ObservadorIF>(observadores)) {
+			o.notify(this);
+		}
 	}
 
 	// ------------------------------------------------------- fim e vencedor
@@ -1441,42 +1533,47 @@ public class Jogo {
 	}
 
 	/**
-	 * Vencedores da partida (pág. 16): quem tem mais votos. Se houver empate,
-	 * vence o empatado mais próximo de Karakorum; se ainda assim houver
-	 * empate, todos eles compartilham a vitória.
-	 *
-	 * TODO: incluir os votos de final de jogo (influência nas regiões e
-	 * conselheiro secreto) e o desempate por tesouros não entregues quando
-	 * melhorias e tesouros forem implementados.
+	 * Vencedores da partida (pág. 16): quem tem mais votos no total (Kurultai
+	 * + influência + conselheiro secreto). Se houver empate, vence o empatado
+	 * com mais tesouros não entregues; depois, o mais próximo de Karakorum. Se
+	 * ainda assim houver empate, todos eles compartilham a vitória.
 	 *
 	 * @return as cores dos vencedores (mais de uma só em caso de empate)
 	 */
 	public List<String> getVencedores() {
-		List<Jogador> empatados = new ArrayList<Jogador>();
-		int maisVotos = -1;
-		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
-			if (j.getVotos() > maisVotos) {
-				maisVotos = j.getVotos();
-				empatados.clear();
-			}
-			if (j.getVotos() == maisVotos) {
-				empatados.add(j);
-			}
+		List<Jogador> empatados = gerenciador.getJogadoresEmOrdem();
+		Map<Jogador, Integer> votos = new HashMap<Jogador, Integer>();
+		Map<Jogador, Integer> tesouros = new HashMap<Jogador, Integer>();
+		Map<Jogador, Integer> proximidade = new HashMap<Jogador, Integer>();
+		for (Jogador j : empatados) {
+			votos.put(j, getVotosFinais(j.getCor().name()));
+			tesouros.put(j, j.getTotalTesouros());
+			proximidade.put(j, -distanciaAteKarakorum(j)); // mais perto = valor maior
 		}
+		empatados = osDeMaiorValor(empatados, votos);
+		empatados = osDeMaiorValor(empatados, tesouros);
+		empatados = osDeMaiorValor(empatados, proximidade);
 
 		List<String> vencedores = new ArrayList<String>();
-		int menorDistancia = Integer.MAX_VALUE;
 		for (Jogador j : empatados) {
-			int distancia = distanciaAteKarakorum(j);
-			if (distancia < menorDistancia) {
-				menorDistancia = distancia;
-				vencedores.clear();
-			}
-			if (distancia == menorDistancia) {
-				vencedores.add(j.getCor().name());
-			}
+			vencedores.add(j.getCor().name());
 		}
 		return vencedores;
+	}
+
+	/** Os jogadores da lista com o maior valor (mais de um se houver empate). */
+	private static List<Jogador> osDeMaiorValor(List<Jogador> jogadores, Map<Jogador, Integer> valor) {
+		int maior = Integer.MIN_VALUE;
+		for (Jogador j : jogadores) {
+			maior = Math.max(maior, valor.get(j));
+		}
+		List<Jogador> melhores = new ArrayList<Jogador>();
+		for (Jogador j : jogadores) {
+			if (valor.get(j) == maior) {
+				melhores.add(j);
+			}
+		}
+		return melhores;
 	}
 
 	// ----------------------------------------------------------------- apoio

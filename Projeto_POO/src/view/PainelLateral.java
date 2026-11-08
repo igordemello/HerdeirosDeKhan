@@ -32,6 +32,8 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import model.Jogo;
+import model.ObservadoIF;
+import model.ObservadorIF;
 
 /**
  * Área lateral da janela do jogo: mostra o jogador da vez e o tabuleiro dele.
@@ -46,15 +48,13 @@ import model.Jogo;
  * <li>um JComboBox permite ao testador definir o número de movimentos.</li>
  * </ul>
  *
- * Quando o jogador ativa uma coluna ou muda os movimentos, o painel avisa a
- * janela com {@code firePropertyChange("movimentos", ...)}, para que o
- * tabuleiro principal saiba quantos movimentos o peão tem. Quando a vez
- * mudar, quem passou a vez deve chamar {@link #atualizar()}.
+ * É observador da partida: sempre que o estado muda (a vez passa, uma
+ * coluna é ativada...), o Model avisa e o painel chama {@link #atualizar()}.
  *
  * Os eventos são tratados por classes internas (sem expressões lambda),
  * como pede o enunciado.
  */
-public class PainelLateral extends JPanel {
+public class PainelLateral extends JPanel implements ObservadorIF {
 	private static final long serialVersionUID = 1L;
 
 	/** Largura sugerida do painel, em pixels. */
@@ -150,16 +150,18 @@ public class PainelLateral extends JPanel {
 		comboMovimentos.addActionListener(new TratadorMovimentos());
 		addMouseListener(new TratadorCliqueNoTabuleiro());
 
+		jogo.add(this);
 		atualizar();
 	}
 
 	// --------------------------------------------------------------- estado
 
-	/**
-	 * Lê de novo o estado do jogo e redesenha o painel. Deve ser chamado
-	 * sempre que a vez mudar ou o tabuleiro do jogador for alterado fora
-	 * deste painel.
-	 */
+	@Override
+	public void notify(ObservadoIF o) {
+		atualizar();
+	}
+
+	/** Lê de novo o estado do jogo e redesenha o painel. */
 	public void atualizar() {
 		atualizandoComponentes = true;
 		try {
@@ -183,15 +185,7 @@ public class PainelLateral extends JPanel {
 		}
 		recursos.atualizar();
 		barraDoTurno.atualizar();
-		if (janelaMercado != null) {
-			janelaMercado.atualizar();
-		}
-		if (janelaEntregas != null) {
-			janelaEntregas.atualizar();
-		}
-		if (janelaCartas != null) {
-			janelaCartas.atualizar();
-		}
+		// as janelas de melhorias, entregas e cartas são observadoras e se atualizam sozinhas
 		if (jogo.getMelhoriasGratisPendentes() > 0) {
 			abrirMelhorias(); // linha completa: o jogador escolhe a melhoria grátis
 		}
@@ -215,7 +209,7 @@ public class PainelLateral extends JPanel {
 	/** Abre (ou traz para a frente) a janela de melhorias. */
 	void abrirMelhorias() {
 		if (janelaMercado == null) {
-			janelaMercado = new JanelaMercado(SwingUtilities.getWindowAncestor(this), jogo, this);
+			janelaMercado = new JanelaMercado(SwingUtilities.getWindowAncestor(this), jogo);
 		}
 		mostrar(janelaMercado);
 	}
@@ -223,7 +217,7 @@ public class PainelLateral extends JPanel {
 	/** Abre (ou traz para a frente) a janela de entregas aos conselheiros. */
 	void abrirEntregas() {
 		if (janelaEntregas == null) {
-			janelaEntregas = new JanelaEntregas(SwingUtilities.getWindowAncestor(this), jogo, this);
+			janelaEntregas = new JanelaEntregas(SwingUtilities.getWindowAncestor(this), jogo);
 		}
 		mostrar(janelaEntregas);
 	}
@@ -231,7 +225,7 @@ public class PainelLateral extends JPanel {
 	/** Abre (ou traz para a frente) a janela de cartas do jogador da vez. */
 	void abrirCartas() {
 		if (janelaCartas == null) {
-			janelaCartas = new JanelaCartas(SwingUtilities.getWindowAncestor(this), jogo, this);
+			janelaCartas = new JanelaCartas(SwingUtilities.getWindowAncestor(this), jogo);
 		}
 		mostrar(janelaCartas);
 	}
@@ -239,13 +233,6 @@ public class PainelLateral extends JPanel {
 	private void mostrar(javax.swing.JDialog janela) {
 		if (!isShowing()) {
 			return; // painel ainda não está na tela (ex.: testes)
-		}
-		if (janela instanceof JanelaMercado) {
-			((JanelaMercado) janela).atualizar();
-		} else if (janela instanceof JanelaEntregas) {
-			((JanelaEntregas) janela).atualizar();
-		} else if (janela instanceof JanelaCartas) {
-			((JanelaCartas) janela).atualizar();
 		}
 		janela.setVisible(true);
 		janela.toFront();
@@ -258,22 +245,10 @@ public class PainelLateral extends JPanel {
 	 */
 	public void escolherConselheirosSecretos() {
 		JanelaCartas.escolherConselheirosSecretos(SwingUtilities.getWindowAncestor(this), jogo);
-		atualizar();
-	}
-
-	/** Avisa a janela de que os movimentos do turno mudaram (ex.: bônus de 3 movimentos). */
-	void firePropertyChangeMovimentos() {
-		firePropertyChange("movimentos", -1, jogo.getMovimentosDaVez());
 	}
 
 	private boolean ativarColuna(String coluna) {
-		int antes = jogo.getMovimentosDaVez();
-		if (coluna == null || !jogo.ativarColuna(coluna)) {
-			return false;
-		}
-		atualizar();
-		firePropertyChange("movimentos", antes, jogo.getMovimentosDaVez());
-		return true;
+		return coluna != null && jogo.ativarColuna(coluna);
 	}
 
 	// ------------------------------------------------------------- desenho
@@ -560,10 +535,7 @@ public class PainelLateral extends JPanel {
 			if (valor == null) {
 				return;
 			}
-			int antes = jogo.getMovimentosDaVez();
 			jogo.definirMovimentosDaVez(valor);
-			repaint();
-			firePropertyChange("movimentos", antes, valor.intValue());
 		}
 	}
 

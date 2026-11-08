@@ -74,7 +74,7 @@ public class TabuleiroJogadorTest {
 	 */
 	@Test
 	public void ativarColunaDefineMovimentosUmaVezPorTurno() {
-		Jogo jogo = new Jogo(Arrays.asList(Cor.AZUL, Cor.VERDE), new Tabuleiro(), new Random(1));
+		Jogo jogo = Jogo.novaPartida(Arrays.asList(Cor.AZUL, Cor.VERDE), new Tabuleiro(), new Random(1));
 		assertTrue(jogo.ativarColuna("VERDE"));
 		assertEquals(2, jogo.getMovimentosDaVez());
 		assertEquals("VERDE", jogo.getColunaAtivadaNaVez());

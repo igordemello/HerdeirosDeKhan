@@ -30,7 +30,7 @@ public class MelhoriasEConselheirosTest {
 	@Before
 	public void setUp() {
 		tabuleiro = FabricaTabuleiro.criarTabuleiroPadrao();
-		jogo = new Jogo(Arrays.asList(Cor.AZUL, Cor.VERDE), tabuleiro, new Random(7));
+		jogo = Jogo.novaPartida(Arrays.asList(Cor.AZUL, Cor.VERDE), tabuleiro, new Random(7));
 		azul = jogo.getJogador(Cor.AZUL);
 		verde = jogo.getJogador(Cor.VERDE);
 	}
