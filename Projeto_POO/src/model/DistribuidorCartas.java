@@ -1,5 +1,6 @@
 package model;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,12 +37,26 @@ class DistribuidorCartas {
 
 	private boolean preparado = false;
 
+	/** Todas as cartas da partida, pelo tipo (usado ao carregar uma partida). */
+	private final Map<TipoConselheiroSecreto, CartaConselheiroSecreto> secretasPorTipo =
+			new HashMap<TipoConselheiroSecreto, CartaConselheiroSecreto>();
+	private final Map<TipoConselheiroAberto, CartaConselheiroAberto> abertasPorTipo =
+			new HashMap<TipoConselheiroAberto, CartaConselheiroAberto>();
+
 	DistribuidorCartas(Random aleatorio) {
 		if (aleatorio == null) {
 			throw new IllegalArgumentException("Gerador aleatório nulo");
 		}
-		this.baralhoSecreto = new Baralho<CartaConselheiroSecreto>(criarCartasSecretas(), aleatorio);
-		this.baralhoAberto = new Baralho<CartaConselheiroAberto>(criarCartasAbertas(), aleatorio);
+		List<CartaConselheiroSecreto> secretas = criarCartasSecretas();
+		List<CartaConselheiroAberto> abertas = criarCartasAbertas();
+		for (CartaConselheiroSecreto c : secretas) {
+			secretasPorTipo.put(c.getTipo(), c);
+		}
+		for (CartaConselheiroAberto c : abertas) {
+			abertasPorTipo.put(c.getTipo(), c);
+		}
+		this.baralhoSecreto = new Baralho<CartaConselheiroSecreto>(secretas, aleatorio);
+		this.baralhoAberto = new Baralho<CartaConselheiroAberto>(abertas, aleatorio);
 	}
 
 	DistribuidorCartas() {
@@ -162,5 +177,83 @@ class DistribuidorCartas {
 
 	Baralho<CartaConselheiroAberto> getBaralhoAberto() {
 		return baralhoAberto;
+	}
+
+	// --------------------------------------------- salvar e carregar (4ª it.)
+
+	CartaConselheiroSecreto getCartaSecreta(TipoConselheiroSecreto tipo) {
+		return secretasPorTipo.get(tipo);
+	}
+
+	CartaConselheiroAberto getCartaAberta(TipoConselheiroAberto tipo) {
+		return abertasPorTipo.get(tipo);
+	}
+
+	/**
+	 * Seção {@code [CARTAS]}: as cartas abertas ainda disponíveis e o
+	 * descarte das secretas. As cartas de cada jogador ficam na seção dele, e
+	 * os montes não precisam ir para o arquivo: depois da preparação nada
+	 * mais é comprado deles, e eles são recalculados ao carregar.
+	 */
+	void salvar(PrintWriter saida) {
+		List<String> nomes = new ArrayList<String>();
+		for (CartaConselheiroAberto c : cartasAbertasReveladas.values()) {
+			nomes.add(c.getTipo().name());
+		}
+		Collections.sort(nomes);
+		ArquivoPartida.linha(saida, "abertasDisponiveis", ArquivoPartida.juntar(nomes));
+		nomes = new ArrayList<String>();
+		for (CartaConselheiroSecreto c : baralhoSecreto.getDescarte()) {
+			nomes.add(c.getTipo().name());
+		}
+		ArquivoPartida.linha(saida, "descarteSecretas", ArquivoPartida.juntar(nomes));
+	}
+
+	/**
+	 * Restaura as cartas a partir da seção {@code [CARTAS]}. Deve ser chamado
+	 * depois de os jogadores terem sido carregados, porque os montes são o
+	 * que sobra das cartas que não estão com ninguém.
+	 *
+	 * @throws IllegalArgumentException se uma carta aparece em dois lugares
+	 */
+	void carregar(Map<String, String> secao, Collection<Jogador> jogadores) {
+		List<CartaConselheiroSecreto> descarte = new ArrayList<CartaConselheiroSecreto>();
+		for (String t : ArquivoPartida.lista(secao, "descarteSecretas")) {
+			descarte.add(getCartaSecreta(TipoConselheiroSecreto.valueOf(t)));
+		}
+		cartasAbertasReveladas.clear();
+		for (String t : ArquivoPartida.lista(secao, "abertasDisponiveis")) {
+			CartaConselheiroAberto c = getCartaAberta(TipoConselheiroAberto.valueOf(t));
+			cartasAbertasReveladas.put(c.getId(), c);
+		}
+
+		List<Carta> usadas = new ArrayList<Carta>(descarte);
+		usadas.addAll(cartasAbertasReveladas.values());
+		for (Jogador j : jogadores) {
+			usadas.addAll(j.getCartasSecretasRecebidas());
+			if (j.getConselheiroSecreto() != null) {
+				usadas.add(j.getConselheiroSecreto());
+			}
+			usadas.addAll(j.getCartasAbertasConquistadas());
+		}
+		if (new java.util.HashSet<Carta>(usadas).size() != usadas.size()) {
+			throw new IllegalArgumentException("Uma carta de conselheiro aparece em dois lugares no arquivo");
+		}
+
+		List<CartaConselheiroSecreto> monteSecreto = new ArrayList<CartaConselheiroSecreto>();
+		for (TipoConselheiroSecreto t : TipoConselheiroSecreto.values()) {
+			if (!usadas.contains(secretasPorTipo.get(t))) {
+				monteSecreto.add(secretasPorTipo.get(t));
+			}
+		}
+		List<CartaConselheiroAberto> monteAberto = new ArrayList<CartaConselheiroAberto>();
+		for (TipoConselheiroAberto t : TipoConselheiroAberto.values()) {
+			if (!usadas.contains(abertasPorTipo.get(t))) {
+				monteAberto.add(abertasPorTipo.get(t));
+			}
+		}
+		baralhoSecreto.restaurar(monteSecreto, descarte);
+		baralhoAberto.restaurar(monteAberto, new ArrayList<CartaConselheiroAberto>());
+		preparado = true;
 	}
 }

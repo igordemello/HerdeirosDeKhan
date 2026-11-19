@@ -4,8 +4,8 @@ package model;
  * Herdeiros do Khan. Cada tabuleiro de jogador representa um herdeiro,
  * que possui uma habilidade especial (ver "Habilidades Especiais", pág. 20).
  *
- * As habilidades em si serão tratadas em iterações futuras; aqui ficam
- * apenas os dados que afetam a preparação do jogo.
+ * Aqui ficam os dados das habilidades; as regras em si são aplicadas pelo
+ * {@link Jogo}, pelo {@link TabuleiroJogador} e pelo mapa.
  */
 enum Herdeiro {
 	ALTANI("Altani", 2),   // Altani joga com 2 peões (por isso o jogo tem 6 peões)
@@ -36,7 +36,6 @@ enum Herdeiro {
 	}
 
 	// Habilidades que vêm escritas nas cartelas e mexem nas ações do mapa.
-	// (A do Jochi é de melhorias e ainda não foi feita.)
 
 	// Altani: por turno só um dos 2 peões anda e faz ações
 	boolean usaUmPeaoPorTurno() {
@@ -56,5 +55,15 @@ enum Herdeiro {
 	// Chagatai: 1x por turno troca 1 cavalo (movimento) por 1 espada
 	boolean trocaCavaloPorEspada() {
 		return this == CHAGATAI;
+	}
+
+	// Jochi: no início do jogo pega 2 melhorias ao acaso e coloca uma delas na
+	// coluna branca; não precisa seguir a cor das peças de melhoria.
+	boolean comecaComMelhoriaNaColunaBranca() {
+		return this == JOCHI;
+	}
+
+	boolean ignoraCorDasMelhorias() {
+		return this == JOCHI;
 	}
 }

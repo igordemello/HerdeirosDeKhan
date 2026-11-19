@@ -1,5 +1,6 @@
 package model;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -280,6 +281,105 @@ class Jogador {
 
 	Collection<CartaConselheiroAberto> getCartasAbertasConquistadas() {
 		return Collections.unmodifiableCollection(cartasAbertasConquistadas.values());
+	}
+
+	// --------------------------------------------- salvar e carregar (4ª it.)
+
+	/**
+	 * Escreve os dados do jogador (recursos, peças de bônus, cartas e o
+	 * tabuleiro dele) na seção {@code [JOGADOR <COR>]}, que quem chama já
+	 * abriu. Só nomes de enum e números, para o arquivo ficar em ASCII.
+	 */
+	void salvar(PrintWriter saida) {
+		ArquivoPartida.linha(saida, "herdeiro", herdeiro.name());
+		List<String> lista = new ArrayList<String>();
+		for (TipoTributo t : TipoTributo.values()) {
+			lista.add(t.name() + ":" + tributos.get(t));
+		}
+		ArquivoPartida.linha(saida, "tributos", ArquivoPartida.juntar(lista));
+		lista.clear();
+		for (TipoTesouro t : TipoTesouro.values()) {
+			lista.add(t.name() + ":" + tesouros.get(t));
+		}
+		ArquivoPartida.linha(saida, "tesouros", ArquivoPartida.juntar(lista));
+		ArquivoPartida.linha(saida, "votos", votos);
+		ArquivoPartida.linha(saida, "yurts", yurtsDisponiveis);
+		ArquivoPartida.linha(saida, "bonus", ArquivoPartida.juntar(bonusDisponiveis));
+		ArquivoPartida.linha(saida, "bonusUsados", ArquivoPartida.juntar(bonusUsados));
+
+		lista.clear();
+		for (CartaConselheiroSecreto c : cartasSecretasRecebidas.values()) {
+			lista.add(c.getTipo().name());
+		}
+		java.util.Collections.sort(lista);
+		ArquivoPartida.linha(saida, "secretasParaEscolher", ArquivoPartida.juntar(lista));
+		ArquivoPartida.linha(saida, "secreto", conselheiroSecreto == null ? "" : conselheiroSecreto.getTipo().name());
+		lista.clear();
+		for (CartaConselheiroAberto c : cartasAbertasConquistadas.values()) {
+			lista.add(c.getTipo().name());
+		}
+		java.util.Collections.sort(lista);
+		ArquivoPartida.linha(saida, "abertas", ArquivoPartida.juntar(lista));
+		tabuleiro.salvar(saida);
+	}
+
+	/**
+	 * Restaura o jogador a partir da sua seção. As cartas são pegas do
+	 * distribuidor da partida, pelo tipo. Os votos vêm direto do arquivo
+	 * (as cartas abertas não dão o voto de novo).
+	 */
+	void carregar(Map<String, String> secao, DistribuidorCartas cartas) {
+		if (!ArquivoPartida.valor(secao, "herdeiro").equals(herdeiro.name())) {
+			throw new IllegalArgumentException("O herdeiro salvo não é o da cor " + cor);
+		}
+		Map<String, Integer> pares = ArquivoPartida.pares(secao, "tributos");
+		for (TipoTributo t : TipoTributo.values()) {
+			tributos.put(t, naoNegativo(pares, t.name()));
+		}
+		pares = ArquivoPartida.pares(secao, "tesouros");
+		for (TipoTesouro t : TipoTesouro.values()) {
+			tesouros.put(t, naoNegativo(pares, t.name()));
+		}
+		votos = ArquivoPartida.inteiro(secao, "votos");
+		yurtsDisponiveis = ArquivoPartida.inteiro(secao, "yurts");
+		if (votos < 0 || yurtsDisponiveis < 0 || yurtsDisponiveis > YURTS_INICIAIS) {
+			throw new IllegalArgumentException("Votos ou yurts inválidos para " + cor);
+		}
+		bonusDisponiveis.clear();
+		for (String b : ArquivoPartida.lista(secao, "bonus")) {
+			bonusDisponiveis.add(TipoBonus.valueOf(b));
+		}
+		bonusUsados.clear();
+		for (String b : ArquivoPartida.lista(secao, "bonusUsados")) {
+			bonusUsados.add(TipoBonus.valueOf(b));
+		}
+
+		cartasSecretasRecebidas.clear();
+		for (String t : ArquivoPartida.lista(secao, "secretasParaEscolher")) {
+			CartaConselheiroSecreto c = cartas.getCartaSecreta(TipoConselheiroSecreto.valueOf(t));
+			cartasSecretasRecebidas.put(c.getId(), c);
+		}
+		String secreto = ArquivoPartida.valor(secao, "secreto");
+		conselheiroSecreto = secreto.isEmpty() ? null
+				: cartas.getCartaSecreta(TipoConselheiroSecreto.valueOf(secreto));
+		if ((conselheiroSecreto == null) == cartasSecretasRecebidas.isEmpty()) {
+			throw new IllegalArgumentException(
+					"O jogador " + cor + " precisa ter um conselheiro secreto ou cartas para escolher");
+		}
+		cartasAbertasConquistadas.clear();
+		for (String t : ArquivoPartida.lista(secao, "abertas")) {
+			CartaConselheiroAberto c = cartas.getCartaAberta(TipoConselheiroAberto.valueOf(t));
+			cartasAbertasConquistadas.put(c.getId(), c);
+		}
+		tabuleiro.carregar(secao);
+	}
+
+	private static int naoNegativo(Map<String, Integer> pares, String nome) {
+		Integer n = pares.get(nome);
+		if (n == null || n < 0) {
+			throw new IllegalArgumentException("Quantidade inválida de " + nome);
+		}
+		return n;
 	}
 
 	@Override

@@ -11,6 +11,7 @@ import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -25,6 +26,9 @@ import model.ObservadorIF;
  * jogador completa uma linha, a mesma janela é usada para escolher a
  * melhoria grátis da coluna branca (pág. 12).
  *
+ * Para o Jochi aparece também a escolha da coluna, porque ele não precisa
+ * seguir a cor das peças.
+ *
  * É observadora da partida e se atualiza sozinha quando o estado muda.
  */
 class JanelaMercado extends JDialog implements ObservadorIF {
@@ -38,6 +42,10 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 	private final JLabel titulo = new JLabel();
 	private final JLabel situacao = new JLabel();
 	private final JButton botaoComprar = new JButton();
+	/** Coluna de destino (só para o Jochi); o item 0 é "a da cor da peça". */
+	private final JComboBox<String> colunaDestino = new JComboBox<String>(
+			new String[] { "Coluna da cor da peça", "VERMELHA", "VERDE", "AMARELA" });
+	private final JLabel rotuloColuna = new JLabel("Colocar na:");
 	private int selecionada = NENHUMA;
 
 	JanelaMercado(Window dono, Jogo jogo) {
@@ -52,7 +60,10 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		topo.add(situacao, BorderLayout.SOUTH);
 
 		botaoComprar.addActionListener(new TratadorComprar());
+		colunaDestino.addActionListener(new TratadorColuna());
 		JPanel rodape = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		rodape.add(rotuloColuna);
+		rodape.add(colunaDestino);
 		rodape.add(botaoComprar);
 
 		setLayout(new BorderLayout());
@@ -79,6 +90,14 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		return jogo.getMelhoriasGratisPendentes() > 0;
 	}
 
+	/** Coluna escolhida para o Jochi, ou {@code null} = coluna da cor da peça. */
+	private String coluna() {
+		if (!jogo.jogadorDaVezIgnoraCorDasMelhorias() || colunaDestino.getSelectedIndex() <= 0) {
+			return null;
+		}
+		return (String) colunaDestino.getSelectedItem();
+	}
+
 	/** Lê de novo o mercado e o jogador da vez. */
 	void atualizar() {
 		List<String> ids = jogo.getMelhoriasDisponiveis();
@@ -96,8 +115,15 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 			situacao.setText("Moedas disponíveis: " + jogo.getTributoDisponivelDaVez("MOEDA") + " (cada melhoria custa "
 					+ jogo.getPrecoMelhoria() + "). A peça vai para a coluna da sua cor e só vale a partir do próximo turno.");
 			botaoComprar.setText("Comprar");
-			botaoComprar.setEnabled(selecionada != NENHUMA && jogo.podeComprarMelhoria(selecionada));
+			botaoComprar.setEnabled(selecionada != NENHUMA && jogo.podeComprarMelhoria(selecionada, coluna()));
+			if (jogo.jogadorDaVezIgnoraCorDasMelhorias()) {
+				situacao.setText("Moedas disponíveis: " + jogo.getTributoDisponivelDaVez("MOEDA") + " (cada melhoria custa "
+						+ jogo.getPrecoMelhoria() + "). Jochi: escolha a coluna em \"Colocar na\"; a peça só vale a partir do próximo turno.");
+			}
 		}
+		boolean escolheColuna = jogo.jogadorDaVezIgnoraCorDasMelhorias() && !modoGratis();
+		rotuloColuna.setVisible(escolheColuna);
+		colunaDestino.setVisible(escolheColuna);
 
 		pecas.removeAll();
 		for (int i = 0; i < ids.size(); i++) {
@@ -134,11 +160,20 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		}
 	}
 
+	/** Troca da coluna de destino (Jochi): reavalia se a compra é possível. */
+	private class TratadorColuna implements ActionListener {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			atualizar();
+		}
+	}
+
 	/** Botão "Comprar" / "Pegar grátis". */
 	private class TratadorComprar implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			boolean ok = modoGratis() ? jogo.escolherMelhoriaGratis(selecionada) : jogo.comprarMelhoria(selecionada);
+			boolean ok = modoGratis() ? jogo.escolherMelhoriaGratis(selecionada)
+					: jogo.comprarMelhoria(selecionada, coluna());
 			if (ok) {
 				selecionada = NENHUMA;
 				atualizar(); // o Model já avisou; aqui é só para tirar a seleção

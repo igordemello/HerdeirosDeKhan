@@ -1,5 +1,8 @@
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Uma peça de melhoria: o tipo e a cor de fundo da peça.
  *
@@ -35,6 +38,54 @@ final class PecaMelhoria {
 	/** Identificador da peça, igual ao nome da imagem (ex.: "CAV-V"). */
 	String getId() {
 		return tipo.getSigla() + "-" + cor.getSigla();
+	}
+
+	/**
+	 * Recria a peça a partir do id (ex.: "CAV-V"), ao carregar uma partida.
+	 *
+	 * @throws IllegalArgumentException se o id não é de nenhuma peça
+	 */
+	static PecaMelhoria deId(String id) {
+		int traco = id == null ? -1 : id.indexOf('-');
+		if (traco < 0) {
+			throw new IllegalArgumentException("Id de melhoria inválido: " + id);
+		}
+		String sigla = id.substring(0, traco);
+		String letra = id.substring(traco + 1);
+		TipoMelhoria tipo = null;
+		for (TipoMelhoria t : TipoMelhoria.values()) {
+			if (t.getSigla().equals(sigla)) {
+				tipo = t;
+			}
+		}
+		ColunaJogador cor = null;
+		for (ColunaJogador c : ColunaJogador.values()) {
+			if (letra.equals(c.getSigla())) {
+				cor = c;
+			}
+		}
+		if (tipo == null || cor == null) {
+			throw new IllegalArgumentException("Id de melhoria inválido: " + id);
+		}
+		return new PecaMelhoria(tipo, cor);
+	}
+
+	/** Converte uma lista de ids em peças. */
+	static List<PecaMelhoria> deIds(List<String> ids) {
+		List<PecaMelhoria> pecas = new ArrayList<PecaMelhoria>();
+		for (String id : ids) {
+			pecas.add(deId(id));
+		}
+		return pecas;
+	}
+
+	/** Converte uma lista de peças nos seus ids. */
+	static List<String> ids(List<PecaMelhoria> pecas) {
+		List<String> ids = new ArrayList<String>();
+		for (PecaMelhoria p : pecas) {
+			ids.add(p.getId());
+		}
+		return ids;
 	}
 
 	@Override

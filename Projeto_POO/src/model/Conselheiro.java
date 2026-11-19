@@ -127,4 +127,13 @@ class Conselheiro {
 	int getNumeroDeEntregas() {
 		return entregas;
 	}
+
+	/** Restaura a peça de bônus (ou {@code null}) e as entregas, ao carregar uma partida. */
+	void restaurar(TipoBonus bonus, int entregas) {
+		if (entregas < 0) {
+			throw new IllegalArgumentException("Número de entregas negativo");
+		}
+		this.bonus = bonus;
+		this.entregas = entregas;
+	}
 }

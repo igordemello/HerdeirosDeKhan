@@ -1,5 +1,6 @@
 package model;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -66,6 +67,10 @@ public class Jogo implements ObservadoIF {
 	private final List<TipoTesouro> tesourosDoBonusParaEscolher = new ArrayList<TipoTesouro>();
 	private int melhoriasGratisPendentes = 0;
 	private int punhosExtrasDaVez = 0;
+	/** Jogador com a habilidade do Jochi, ou {@code null} se ninguém joga com ele. */
+	private Jogador jochi = null;
+	/** As 2 melhorias tiradas para o Jochi no início do jogo, esperando a escolha. */
+	private final List<PecaMelhoria> melhoriasIniciaisDoJochi = new ArrayList<PecaMelhoria>();
 
 	// --- ações no mapa (tributos, yurts, ataques, Khan) ---
 	private static final int TESOUROS_POR_CIDADE = 4;
@@ -123,6 +128,7 @@ public class Jogo implements ObservadoIF {
 		this.mercado = new MercadoMelhorias(aleatorio);
 		this.reservaTesouros = new ReservaTesouros(aleatorio);
 		conselho.distribuirBonus(aleatorio);
+		prepararMelhoriasDoJochi();
 		for (TipoTributo t : TipoTributo.values()) {
 			virtuaisUsados.put(t, 0);
 		}
@@ -508,13 +514,31 @@ public class Jogo implements ObservadoIF {
 	 *               comprar a do topo da pilha (aleatória)
 	 */
 	public boolean podeComprarMelhoria(int indice) {
-		if (melhoriasGratisPendentes > 0 || getTributoDisponivelDaVez("MOEDA") < PRECO_MELHORIA) {
+		return podeComprarMelhoria(indice, null);
+	}
+
+	/**
+	 * Como {@link #podeComprarMelhoria(int)}, escolhendo a coluna onde a peça
+	 * vai ficar. Só o Jochi pode pôr a peça numa coluna de outra cor; para os
+	 * outros a coluna tem de ser a da cor da peça.
+	 *
+	 * @param coluna coluna colorida de destino, ou {@code null} para a coluna
+	 *               da cor da peça
+	 */
+	public boolean podeComprarMelhoria(int indice, String coluna) {
+		if (melhoriasGratisPendentes > 0 || getTributoDisponivelDaVez("MOEDA") < PRECO_MELHORIA
+				|| jogadorDaVez() == jochi && !melhoriasIniciaisDoJochi.isEmpty()) {
 			return false;
 		}
 		TabuleiroJogador tab = jogadorDaVez().getTabuleiro();
 		if (indice == -1) {
 			if (mercado.verTopo() == null) {
 				return false;
+			}
+			if (coluna != null) {
+				// só o Jochi escolhe a coluna antes de ver a peça
+				ColunaJogador c = coluna(coluna);
+				return tab.getHerdeiro().ignoraCorDasMelhorias() && c.ehColorida() && tab.temEspaco(c);
 			}
 			for (ColunaJogador c : ColunaJogador.values()) {
 				if (c.ehColorida() && tab.temEspaco(c)) {
@@ -524,7 +548,7 @@ public class Jogo implements ObservadoIF {
 			return false;
 		}
 		PecaMelhoria peca = mercado.verDisponivel(indice);
-		return peca != null && tab.temEspaco(peca.getCor());
+		return peca != null && destinoDaMelhoria(peca, coluna) != null;
 	}
 
 	/**
@@ -539,27 +563,72 @@ public class Jogo implements ObservadoIF {
 	 *         do topo não couber no tabuleiro, ela volta para o fundo da pilha
 	 */
 	public boolean comprarMelhoria(int indice) {
-		if (!podeComprarMelhoria(indice)) {
+		return comprarMelhoria(indice, null);
+	}
+
+	/**
+	 * Compra uma melhoria e a coloca na coluna escolhida (habilidade do
+	 * Jochi). Com {@code coluna == null} é igual a {@link #comprarMelhoria(int)}.
+	 */
+	public boolean comprarMelhoria(int indice, String coluna) {
+		if (!podeComprarMelhoria(indice, coluna)) {
 			return false;
 		}
 		TabuleiroJogador tab = jogadorDaVez().getTabuleiro();
-		PecaMelhoria peca;
-		if (indice == -1) {
-			peca = mercado.retirarDoTopo();
-			if (!tab.temEspaco(peca.getCor())) {
-				mercado.devolverAoFundo(peca);
-				return false;
-			}
-		} else {
-			peca = mercado.retirarDisponivel(indice);
+		PecaMelhoria peca = indice == -1 ? mercado.retirarDoTopo() : mercado.retirarDisponivel(indice);
+		ColunaJogador destino = destinoDaMelhoria(peca, coluna);
+		if (destino == null) { // só acontece com a peça do topo, que não cabia
+			mercado.devolverAoFundo(peca);
+			return false;
 		}
 		gastarTributo(TipoTributo.MOEDA, PRECO_MELHORIA);
-		int linhasAntes = tab.getLinhasCompletas();
-		tab.adicionarMelhoria(peca.getCor(), peca);
-		melhoriasGratisPendentes += tab.getLinhasCompletas() - linhasAntes;
+		tab.adicionarMelhoria(destino, peca);
+		atualizarMelhoriasGratis(tab);
 		verificarCartasAbertas();
 		mudouEstado();
 		return true;
+	}
+
+	/** Se o jogador da vez pode pôr as melhorias em colunas de outra cor (Jochi). */
+	public boolean jogadorDaVezIgnoraCorDasMelhorias() {
+		return jogadorDaVez().getHerdeiro().ignoraCorDasMelhorias();
+	}
+
+	/**
+	 * Coluna onde a peça vai ficar, ou {@code null} se ela não cabe. Sem
+	 * coluna escolhida, vai para a da cor dela; o Jochi, se essa estiver
+	 * cheia, usa a primeira coluna colorida com espaço.
+	 */
+	private ColunaJogador destinoDaMelhoria(PecaMelhoria peca, String coluna) {
+		TabuleiroJogador tab = jogadorDaVez().getTabuleiro();
+		boolean qualquerCor = tab.getHerdeiro().ignoraCorDasMelhorias();
+		if (coluna != null) {
+			ColunaJogador c = coluna(coluna);
+			boolean corOk = c == peca.getCor() || qualquerCor && c.ehColorida();
+			return corOk && tab.temEspaco(c) ? c : null;
+		}
+		if (tab.temEspaco(peca.getCor())) {
+			return peca.getCor();
+		}
+		if (qualquerCor) {
+			for (ColunaJogador c : ColunaJogador.values()) {
+				if (c.ehColorida() && tab.temEspaco(c)) {
+					return c;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Cada linha completa dá uma peça na coluna branca (pág. 12). As grátis
+	 * pendentes são as linhas completas que ainda não têm a sua peça na
+	 * branca. Assim o Jochi, que já começa com uma peça na branca, não ganha
+	 * nada pela primeira linha (o espaço dela já está ocupado).
+	 */
+	private void atualizarMelhoriasGratis(TabuleiroJogador tab) {
+		int naBranca = tab.getMelhorias(ColunaJogador.BRANCA).size();
+		melhoriasGratisPendentes = Math.max(0, tab.getLinhasCompletas() - naBranca);
 	}
 
 	/** Melhorias grátis que o jogador da vez ainda precisa escolher para a coluna branca. */
@@ -1451,6 +1520,133 @@ public class Jogo implements ObservadoIF {
 		return mercado.espacoVazio(espaco);
 	}
 
+	// ------------------------------------------- habilidade do Jochi (4ª it.)
+
+	/**
+	 * Preparação do Jochi: "No início do jogo, pegue 2 melhorias ao acaso e
+	 * coloque uma delas na sua coluna branca." As 2 peças saem do topo da
+	 * pilha (viradas para baixo, então são ao acaso) e esperam a escolha.
+	 */
+	private void prepararMelhoriasDoJochi() {
+		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
+			if (j.getHerdeiro().comecaComMelhoriaNaColunaBranca()) {
+				jochi = j;
+				for (int i = 0; i < 2 && mercado.verTopo() != null; i++) {
+					melhoriasIniciaisDoJochi.add(mercado.retirarDoTopo());
+				}
+			}
+		}
+	}
+
+	/** Cor do jogador que ainda precisa escolher a melhoria inicial (Jochi), ou {@code null}. */
+	public String getCorComMelhoriaInicialParaEscolher() {
+		return melhoriasIniciaisDoJochi.isEmpty() ? null : jochi.getCor().name();
+	}
+
+	/** Ids das 2 melhorias tiradas para o Jochi escolher (vazio se já escolheu). */
+	public List<String> getMelhoriasIniciaisParaEscolher() {
+		return PecaMelhoria.ids(melhoriasIniciaisDoJochi);
+	}
+
+	/**
+	 * O Jochi escolhe qual das 2 melhorias vai para a coluna branca; a outra
+	 * volta para o fundo da pilha. A peça já vale desde o primeiro turno.
+	 *
+	 * @param indice posição em {@link #getMelhoriasIniciaisParaEscolher()}
+	 * @return {@code false} se não há escolha pendente ou o índice é inválido
+	 */
+	public boolean escolherMelhoriaInicial(int indice) {
+		if (indice < 0 || indice >= melhoriasIniciaisDoJochi.size()) {
+			return false;
+		}
+		PecaMelhoria escolhida = melhoriasIniciaisDoJochi.remove(indice);
+		for (PecaMelhoria outra : melhoriasIniciaisDoJochi) {
+			mercado.devolverAoFundo(outra);
+		}
+		melhoriasIniciaisDoJochi.clear();
+		TabuleiroJogador tab = jochi.getTabuleiro();
+		tab.adicionarMelhoria(ColunaJogador.BRANCA, escolhida);
+		tab.encerrarTurno(); // colocada na preparação: vale desde o primeiro turno
+		mudouEstado();
+		return true;
+	}
+
+	// ------------------------------------------ salvar e carregar (4ª it.)
+	// Parte do Rafael: jogadores, tabuleiros dos jogadores, cartas, mercado
+	// de melhorias, reserva de tesouros e conselheiros. O Jogo.salvar/carregar
+	// chama estes dois métodos junto com os das outras partes.
+
+	static final String SECAO_JOGADOR = "JOGADOR ";
+	static final String SECAO_MERCADO = "MERCADO";
+	static final String SECAO_RESERVA = "RESERVA";
+	static final String SECAO_CONSELHEIROS = "CONSELHEIROS";
+	static final String SECAO_CARTAS = "CARTAS";
+	private static final int TOTAL_DE_MELHORIAS = 44;
+
+	/**
+	 * Escreve as seções {@code [JOGADOR <COR>]} (uma por jogador, na ordem
+	 * de jogo), {@code [MERCADO]}, {@code [RESERVA]}, {@code [CONSELHEIROS]}
+	 * e {@code [CARTAS]}.
+	 */
+	void salvarParteDosJogadores(PrintWriter saida) {
+		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
+			ArquivoPartida.secao(saida, SECAO_JOGADOR + j.getCor().name());
+			j.salvar(saida);
+			if (j == jochi) {
+				ArquivoPartida.linha(saida, "melhoriasIniciais",
+						ArquivoPartida.juntar(PecaMelhoria.ids(melhoriasIniciaisDoJochi)));
+			}
+		}
+		ArquivoPartida.secao(saida, SECAO_MERCADO);
+		mercado.salvar(saida);
+		ArquivoPartida.secao(saida, SECAO_RESERVA);
+		reservaTesouros.salvar(saida);
+		ArquivoPartida.secao(saida, SECAO_CONSELHEIROS);
+		conselho.salvar(saida);
+		ArquivoPartida.secao(saida, SECAO_CARTAS);
+		distribuidor.salvar(saida);
+	}
+
+	/**
+	 * Lê as seções escritas por {@link #salvarParteDosJogadores(PrintWriter)}
+	 * e troca o estado desta partida pelo do arquivo. A partida tem de ter
+	 * sido criada com as mesmas cores (a seção [PARTIDA] diz quais são).
+	 *
+	 * @throws IllegalArgumentException se falta algo ou o arquivo é incoerente
+	 */
+	void carregarParteDosJogadores(Map<String, Map<String, String>> secoes) {
+		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
+			Map<String, String> secao = ArquivoPartida.secaoObrigatoria(secoes, SECAO_JOGADOR + j.getCor().name());
+			j.carregar(secao, distribuidor);
+			if (j == jochi) {
+				melhoriasIniciaisDoJochi.clear();
+				melhoriasIniciaisDoJochi.addAll(PecaMelhoria.deIds(ArquivoPartida.lista(secao, "melhoriasIniciais")));
+			}
+		}
+		distribuidor.carregar(ArquivoPartida.secaoObrigatoria(secoes, SECAO_CARTAS), gerenciador.getJogadoresEmOrdem());
+		mercado.carregar(ArquivoPartida.secaoObrigatoria(secoes, SECAO_MERCADO));
+		reservaTesouros.carregar(ArquivoPartida.secaoObrigatoria(secoes, SECAO_RESERVA));
+		conselho.carregar(ArquivoPartida.secaoObrigatoria(secoes, SECAO_CONSELHEIROS));
+
+		int melhorias = mercado.getTotal() + melhoriasIniciaisDoJochi.size();
+		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
+			melhorias += j.getTabuleiro().getTotalMelhorias();
+		}
+		if (melhorias != TOTAL_DE_MELHORIAS) {
+			throw new IllegalArgumentException("O arquivo tem " + melhorias + " melhorias; o jogo tem "
+					+ TOTAL_DE_MELHORIAS);
+		}
+		// o que só vale durante um turno começa zerado
+		melhoriasGratisPendentes = 0;
+		punhosExtrasDaVez = 0;
+		tesourosDoBonusParaEscolher.clear();
+		tesourosVirtuaisUsados.clear();
+		paradasVisitadasNaVez.clear();
+		for (TipoTributo t : TipoTributo.values()) {
+			virtuaisUsados.put(t, 0);
+		}
+	}
+
 	// ----------------------------------------------------------- apoio
 
 	private Jogador jogadorDaVez() {
@@ -1464,6 +1660,9 @@ public class Jogo implements ObservadoIF {
 			// melhoria grátis não escolhida: vai a do topo da pilha
 		}
 		melhoriasGratisPendentes = 0;
+		if (j == jochi && !melhoriasIniciaisDoJochi.isEmpty()) {
+			escolherMelhoriaInicial(0); // o Jochi não escolheu: fica a primeira
+		}
 		if (!tesourosDoBonusParaEscolher.isEmpty()) {
 			j.adicionarTesouro(tesourosDoBonusParaEscolher.get(0), 1);
 			tesourosDoBonusParaEscolher.clear();
@@ -1581,6 +1780,23 @@ public class Jogo implements ObservadoIF {
 	/** Usado pelos testes. */
 	Jogador getJogador(Cor cor) {
 		return gerenciador.getJogador(cor);
+	}
+
+	/** Usados pelos testes de salvar e carregar. */
+	DistribuidorCartas getDistribuidor() {
+		return distribuidor;
+	}
+
+	MercadoMelhorias getMercado() {
+		return mercado;
+	}
+
+	ReservaTesouros getReservaTesouros() {
+		return reservaTesouros;
+	}
+
+	Conselho getConselho() {
+		return conselho;
 	}
 
 	/** Distância do peão do jogador mais perto de Karakorum (Altani tem 2). */

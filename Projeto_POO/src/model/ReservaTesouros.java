@@ -1,6 +1,8 @@
 package model;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -46,5 +48,24 @@ class ReservaTesouros {
 
 	int tamanho() {
 		return pilha.size();
+	}
+
+	// --------------------------------------------- salvar e carregar (4ª it.)
+
+	/** A pilha, do fundo para o topo (a ordem importa: o próximo bônus tira do topo). */
+	void salvar(PrintWriter saida) {
+		ArquivoPartida.linha(saida, "pilha", ArquivoPartida.juntar(pilha));
+	}
+
+	void carregar(Map<String, String> secao) {
+		List<TipoTesouro> nova = new ArrayList<TipoTesouro>();
+		for (String nome : ArquivoPartida.lista(secao, "pilha")) {
+			nova.add(TipoTesouro.valueOf(nome));
+		}
+		if (nova.size() > TipoTesouro.values().length * TipoTesouro.PECAS_POR_TIPO) {
+			throw new IllegalArgumentException("Tesouros demais na reserva");
+		}
+		pilha.clear();
+		pilha.addAll(nova);
 	}
 }

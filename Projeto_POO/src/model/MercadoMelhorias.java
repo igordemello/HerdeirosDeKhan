@@ -1,6 +1,8 @@
 package model;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -141,5 +143,25 @@ class MercadoMelhorias {
 		for (int i = 0; i < vazios && !pilha.isEmpty(); i++) {
 			disponiveis.add(0, pilha.remove(pilha.size() - 1));
 		}
+	}
+
+	// --------------------------------------------- salvar e carregar (4ª it.)
+
+	/** Peças da pilha, do fundo para o topo, e as disponíveis, da esquerda para a direita. */
+	void salvar(PrintWriter saida) {
+		ArquivoPartida.linha(saida, "disponiveis", ArquivoPartida.juntar(PecaMelhoria.ids(disponiveis)));
+		ArquivoPartida.linha(saida, "pilha", ArquivoPartida.juntar(PecaMelhoria.ids(pilha)));
+	}
+
+	void carregar(Map<String, String> secao) {
+		List<PecaMelhoria> novasDisponiveis = PecaMelhoria.deIds(ArquivoPartida.lista(secao, "disponiveis"));
+		if (novasDisponiveis.size() > PECAS_REVELADAS) {
+			throw new IllegalArgumentException("Melhorias disponíveis demais no arquivo");
+		}
+		List<PecaMelhoria> novaPilha = PecaMelhoria.deIds(ArquivoPartida.lista(secao, "pilha"));
+		disponiveis.clear();
+		disponiveis.addAll(novasDisponiveis);
+		pilha.clear();
+		pilha.addAll(novaPilha);
 	}
 }

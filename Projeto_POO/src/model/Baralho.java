@@ -86,6 +86,17 @@ class Baralho<T extends Carta> {
 		return Collections.unmodifiableList(descarte);
 	}
 
+	/**
+	 * Troca o conteúdo do monte e do descarte (ao carregar uma partida).
+	 * O monte é dado do fundo para o topo.
+	 */
+	void restaurar(List<T> novoMonte, List<T> novoDescarte) {
+		monte.clear();
+		monte.addAll(novoMonte);
+		descarte.clear();
+		descarte.addAll(novoDescarte);
+	}
+
 	/** Cópia somente-leitura do monte (o último elemento é o topo). */
 	List<T> getMonte() {
 		return Collections.unmodifiableList(monte);

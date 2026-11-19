@@ -241,10 +241,13 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 	/**
 	 * Escolha dos conselheiros secretos no início da partida: abre, para cada
 	 * jogador, uma janela modal com as 2 cartas dele. Deve ser chamado pelo
-	 * Controller antes da primeira rodada (pág. 6).
+	 * Controller antes da primeira rodada (pág. 6). Em seguida, se o Jochi
+	 * estiver na partida, ele escolhe a melhoria inicial da coluna branca.
+	 * Numa partida carregada, só abre o que ainda estiver pendente.
 	 */
 	public void escolherConselheirosSecretos() {
 		JanelaCartas.escolherConselheirosSecretos(SwingUtilities.getWindowAncestor(this), jogo);
+		EscolhaDeMelhoriaInicial.mostrarSePendente(this, jogo);
 	}
 
 	private boolean ativarColuna(String coluna) {

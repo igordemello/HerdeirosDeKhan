@@ -1,5 +1,6 @@
 package model;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,5 +63,26 @@ class Conselho {
 
 	Collection<Conselheiro> getConselheiros() {
 		return Collections.unmodifiableCollection(conselheiros.values());
+	}
+
+	// --------------------------------------------- salvar e carregar (4ª it.)
+
+	/** Para cada conselheiro: a peça de bônus que ainda está nele e as entregas feitas. */
+	void salvar(PrintWriter saida) {
+		List<String> ids = new ArrayList<String>(conselheiros.keySet());
+		Collections.sort(ids);
+		for (String id : ids) {
+			Conselheiro c = conselheiros.get(id);
+			ArquivoPartida.linha(saida, id + ".bonus", c.getBonus() == null ? "" : c.getBonus().name());
+			ArquivoPartida.linha(saida, id + ".entregas", c.getNumeroDeEntregas());
+		}
+	}
+
+	void carregar(Map<String, String> secao) {
+		for (Conselheiro c : conselheiros.values()) {
+			String bonus = ArquivoPartida.valor(secao, c.getIdParada() + ".bonus");
+			c.restaurar(bonus.isEmpty() ? null : TipoBonus.valueOf(bonus),
+					ArquivoPartida.inteiro(secao, c.getIdParada() + ".entregas"));
+		}
 	}
 }

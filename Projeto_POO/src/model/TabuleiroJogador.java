@@ -1,5 +1,6 @@
 package model;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,7 +23,8 @@ import java.util.Set;
  * ativada (base + melhorias);</li>
  * <li>as melhorias são colocadas de baixo para cima, no máximo 4 por coluna;
  * numa coluna colorida a peça tem de ser da cor dela, na branca vale
- * qualquer cor (pág. 11-12).</li>
+ * qualquer cor (pág. 11-12). O Jochi não precisa seguir a cor das peças
+ * (habilidade do herdeiro).</li>
  * </ul>
  */
 class TabuleiroJogador {
@@ -205,7 +207,7 @@ class TabuleiroJogador {
 		if (lista.size() >= MAX_MELHORIAS_POR_COLUNA) {
 			return false;
 		}
-		if (coluna.ehColorida() && peca.getCor() != coluna) {
+		if (coluna.ehColorida() && peca.getCor() != coluna && !herdeiro.ignoraCorDasMelhorias()) {
 			return false;
 		}
 		lista.add(peca);
@@ -269,6 +271,49 @@ class TabuleiroJogador {
 
 	List<PecaMelhoria> getMelhorias(ColunaJogador coluna) {
 		return Collections.unmodifiableList(melhorias.get(verificar(coluna)));
+	}
+
+	// --------------------------------------------- salvar e carregar (4ª it.)
+
+	/**
+	 * Escreve, na seção do jogador, as colunas com ficha de ativação e as
+	 * melhorias de cada coluna, de baixo para cima. As peças colocadas no
+	 * turno já valem quando a partida é salva (só se salva entre turnos).
+	 */
+	void salvar(PrintWriter saida) {
+		List<String> comFicha = new ArrayList<String>();
+		for (ColunaJogador c : ColunaJogador.values()) {
+			if (ocupada.get(c)) {
+				comFicha.add(c.name());
+			}
+		}
+		ArquivoPartida.linha(saida, "fichas", ArquivoPartida.juntar(comFicha));
+		for (ColunaJogador c : ColunaJogador.values()) {
+			ArquivoPartida.linha(saida, "melhorias." + c.name(), ArquivoPartida.juntar(PecaMelhoria.ids(melhorias.get(c))));
+		}
+	}
+
+	/** Restaura fichas e melhorias a partir da seção do jogador. */
+	void carregar(Map<String, String> secao) {
+		for (ColunaJogador c : ColunaJogador.values()) {
+			ocupada.put(c, false);
+			melhorias.get(c).clear();
+		}
+		novasNoTurno.clear();
+		for (String nome : ArquivoPartida.lista(secao, "fichas")) {
+			ColunaJogador c = ColunaJogador.valueOf(nome);
+			if (c.recuperaFichas()) {
+				throw new IllegalArgumentException("A coluna branca nunca fica com ficha");
+			}
+			ocupada.put(c, true);
+		}
+		for (ColunaJogador c : ColunaJogador.values()) {
+			List<PecaMelhoria> pecas = PecaMelhoria.deIds(ArquivoPartida.lista(secao, "melhorias." + c.name()));
+			if (pecas.size() > MAX_MELHORIAS_POR_COLUNA) {
+				throw new IllegalArgumentException("Coluna " + c + " com melhorias demais");
+			}
+			melhorias.get(c).addAll(pecas);
+		}
 	}
 
 	private static ColunaJogador verificar(ColunaJogador coluna) {
