@@ -59,6 +59,10 @@ public class JanelaPrincipal extends JFrame {
 		return painelLateral.getBotaoHabilidade();
 	}
 
+	public JButton getBotaoSalvar() {
+		return painelLateral.getBotaoSalvar();
+	}
+
 	public void mostrarMensagem(String texto) {
 		painelLateral.mostrarMensagem(texto);
 	}

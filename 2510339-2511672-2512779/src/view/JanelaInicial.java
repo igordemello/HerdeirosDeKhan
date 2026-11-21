@@ -23,21 +23,18 @@ public class JanelaInicial extends JFrame {
 	private static final long serialVersionUID = 1L;
 
 	private final JButton botaoNovoJogo = new JButton("Novo jogo");
-	private final JButton botaoContinuar = new JButton("Continuar");
+	private final JButton botaoContinuar = new JButton("Continuar partida");
+	private final Fundo fundo = new Fundo();
 
 	public JanelaInicial() {
 		super("Herdeiros do Khan - Início");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-		botaoContinuar.setEnabled(false);
-		botaoContinuar.setToolTipText("Salvar e continuar uma partida fica para a 4ª iteração");
 
 		JPanel botoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 16, 24));
 		botoes.setOpaque(false);
 		botoes.add(botaoNovoJogo);
 		botoes.add(botaoContinuar);
 
-		Fundo fundo = new Fundo();
 		fundo.setLayout(new BorderLayout());
 		fundo.add(botoes, BorderLayout.SOUTH);
 		setContentPane(fundo);
@@ -49,10 +46,21 @@ public class JanelaInicial extends JFrame {
 		return botaoNovoJogo;
 	}
 
-	/** Imagem do tabuleiro com o nome do jogo por cima. */
+	public JButton getBotaoContinuar() {
+		return botaoContinuar;
+	}
+
+	/** Aviso em cima dos botões (ex.: o arquivo escolhido não é uma partida válida). */
+	public void mostrarAviso(String texto) {
+		fundo.aviso = texto;
+		fundo.repaint();
+	}
+
+	/** Imagem do tabuleiro com o nome do jogo por cima (e o aviso, se houver). */
 	private static class Fundo extends JPanel {
 		private static final long serialVersionUID = 1L;
 		private final Image imagem = ImagensTabuleiroJogador.carregarArquivo("imagens/", "tabuleiro");
+		private String aviso = null;
 
 		@Override
 		protected void paintComponent(Graphics g) {
@@ -69,6 +77,19 @@ public class JanelaInicial extends JFrame {
 			FontMetrics fm = g2.getFontMetrics();
 			String titulo = "Herdeiros do Khan";
 			g2.drawString(titulo, (getWidth() - fm.stringWidth(titulo)) / 2, 40 + (80 + fm.getAscent()) / 2 - 6);
+
+			if (aviso != null) {
+				int y = getHeight() - 120;
+				g2.setColor(new Color(0, 0, 0, 170));
+				g2.fillRect(0, y, getWidth(), 34);
+				g2.setColor(new Color(255, 200, 120));
+				int tamanho = 13;
+				do { // diminui a letra até o aviso caber na largura da janela
+					g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, tamanho--));
+					fm = g2.getFontMetrics();
+				} while (fm.stringWidth(aviso) > getWidth() - 16 && tamanho > 8);
+				g2.drawString(aviso, Math.max(8, (getWidth() - fm.stringWidth(aviso)) / 2), y + (34 + fm.getAscent()) / 2 - 2);
+			}
 		}
 	}
 }

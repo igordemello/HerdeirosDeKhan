@@ -4,7 +4,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
 
 import javax.swing.SwingUtilities;
 
@@ -12,6 +13,7 @@ import model.Jogo;
 import view.JanelaFimDeJogo;
 import view.JanelaPrincipal;
 import view.PainelTabuleiro;
+import view.SeletorPartida;
 
 /*
  * Controla a sequência de uma partida.
@@ -29,7 +31,11 @@ import view.PainelTabuleiro;
  * uma coluna e de usar o Khan, quando a coluna obrigar.
  *
  * Quando o fim do jogo é disparado (pág. 14), a rodada atual termina, todos
- * jogam mais uma vez e a partida acaba com a janela de resultado.
+ * jogam mais uma vez e a partida acaba com a janela de resultado, que
+ * pergunta se jogam de novo ou fecham o programa.
+ *
+ * O botão "Salvar" grava a partida num arquivo, mas só no começo do turno,
+ * antes de o jogador da vez fazer qualquer jogada (4ª iteração).
  *
  * Quem diz se a ação vale é o Model; aqui só chamamos e mostramos uma
  * mensagem. A tela não é redesenhada aqui: o Model avisa os observadores
@@ -39,21 +45,25 @@ import view.PainelTabuleiro;
 public class ControladorJogo {
 	private final Jogo jogo = Jogo.getInstancia();
 	private final JanelaPrincipal janela;
-	/** Turnos que ainda serão jogados depois que o fim foi disparado; -1 = ainda não disparou. */
-	private int turnosAteOFim = -1;
 
 	public ControladorJogo(JanelaPrincipal janela) {
 		this.janela = janela;
 		janela.getPainelTabuleiro().addMouseListener(new TratadorCliqueNoTabuleiro());
 		janela.getBotaoPassarVez().addActionListener(new TratadorPassarVez());
 		janela.getBotaoHabilidade().addActionListener(new TratadorHabilidade());
+		janela.getBotaoSalvar().addActionListener(new TratadorSalvar());
 	}
 
-	/** Mostra o tabuleiro e faz a escolha dos conselheiros secretos (pág. 6). */
+	/**
+	 * Mostra o tabuleiro e faz a escolha dos conselheiros secretos (pág. 6).
+	 * Numa partida carregada eles já foram escolhidos, então ninguém é
+	 * perguntado de novo.
+	 */
 	public void iniciar() {
 		janela.setVisible(true);
 		janela.escolherConselheirosSecretos();
-		janela.mostrarMensagem("Começa " + jogo.getJogadorDaVez() + ".");
+		String aviso = avisoDoFim();
+		janela.mostrarMensagem("Vez de " + jogo.getJogadorDaVez() + "." + (aviso.isEmpty() ? "" : " " + aviso));
 	}
 
 	// ------------------------------------------------------- ações no mapa
@@ -184,30 +194,50 @@ public class ControladorJogo {
 			janela.mostrarMensagem("Use o Khan antes de passar a vez.");
 			return;
 		}
-		List<String> ordem = jogo.getCores();
-		int posicao = ordem.indexOf(jogo.getJogadorDaVez());
-		if (turnosAteOFim < 0 && jogo.fimDeJogoDisparado()) {
-			// os que faltam nesta rodada + uma rodada completa (pág. 14)
-			turnosAteOFim = (ordem.size() - 1 - posicao) + ordem.size();
-		} else if (turnosAteOFim > 0) {
-			turnosAteOFim--;
-		}
-
-		jogo.passarVez();
-		if (turnosAteOFim == 0) {
+		jogo.passarVez(); // o Model conta os turnos que faltam depois do fim disparado
+		if (jogo.partidaAcabou()) {
 			encerrarPartida();
-		} else if (turnosAteOFim > 0) {
-			janela.mostrarMensagem("Fim de jogo disparado: faltam " + turnosAteOFim + " turno(s).");
 		} else {
-			janela.mostrarMensagem("");
+			janela.mostrarMensagem(avisoDoFim());
 		}
 	}
 
-	/** Mostra o resultado e, quando a janela dele é fechada, volta para o início. */
+	private String avisoDoFim() {
+		int turnos = jogo.getTurnosAteOFim();
+		return turnos > 0 ? "Fim de jogo disparado: faltam " + turnos + " turno(s)." : "";
+	}
+
+	/**
+	 * Mostra o resultado e pergunta se jogam de novo (reabre a escolha dos
+	 * personagens) ou fecham o programa.
+	 */
 	private void encerrarPartida() {
-		new JanelaFimDeJogo(janela, jogo).setVisible(true); // modal: espera fechar
-		new ControladorInicio();
+		JanelaFimDeJogo fim = new JanelaFimDeJogo(janela, jogo);
+		fim.setVisible(true); // modal: espera a resposta
 		janela.dispose();
+		if (fim.querJogarDeNovo()) {
+			new ControladorInicio().mostrarEscolhaDosJogadores();
+		} else {
+			System.exit(0);
+		}
+	}
+
+	/** "Salvar": só no começo do turno; o arquivo é escolhido no JFileChooser. */
+	void salvar() {
+		if (!jogo.podeSalvar()) {
+			janela.mostrarMensagem("Só dá para salvar no começo do turno, antes de qualquer jogada.");
+			return;
+		}
+		File arquivo = SeletorPartida.escolherParaSalvar(janela);
+		if (arquivo == null) {
+			return; // cancelou
+		}
+		try {
+			jogo.salvar(arquivo);
+			janela.mostrarMensagem("Partida salva em " + arquivo.getName() + ".");
+		} catch (IOException e) {
+			janela.mostrarMensagem("Não deu para salvar: " + e.getMessage());
+		}
 	}
 
 	// ------------------------------------------------- tratadores de eventos
@@ -227,6 +257,13 @@ public class ControladorJogo {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			passarVez();
+		}
+	}
+
+	private class TratadorSalvar implements ActionListener {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			salvar();
 		}
 	}
 

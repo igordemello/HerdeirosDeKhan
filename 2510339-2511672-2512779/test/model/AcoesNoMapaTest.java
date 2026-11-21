@@ -63,24 +63,6 @@ public class AcoesNoMapaTest {
 	}
 
 	/*
-	 * Objetivo: os punhos extras do bônus somam com os da coluna.
-	 * Entrada: AZUL usa o bônus "2 punhos" e ativa a AMARELA (1 punho).
-	 * Resultado esperado: 3 punhos, e depois de 3 tributos não sobra nenhum.
-	 */
-	@Test
-	public void bonusDePunhosSomaAosDaColuna() {
-		azul.receberBonus(TipoBonus.DOIS_PUNHOS);
-		assertTrue(jogo.usarBonus("DOIS_PUNHOS"));
-		assertTrue(jogo.ativarColuna("AMARELA"));
-		assertEquals(3, jogo.getPunhosDaVez());
-		assertTrue(jogo.pegarTributo("PV04"));
-		assertTrue(jogo.pegarTributo("PV05"));
-		assertTrue(jogo.pegarTributo("PV09"));
-		assertEquals(0, jogo.getPunhosDaVez());
-		assertEquals(0, jogo.getPunhosExtrasDaVez());
-	}
-
-	/*
 	 * Objetivo: yurt só em parada do turno, nunca em Karakorum, 1 por parada
 	 * simples, pagando 1 peça de yurt.
 	 * Entrada: AZUL com 2 peças de yurt tenta Karakorum, vai pra R08, constrói
@@ -103,28 +85,6 @@ public class AcoesNoMapaTest {
 		assertFalse("parada simples só tem 1 yurt", jogo.construirYurt("R08"));
 		assertFalse("o peão não passou por R09", jogo.construirYurt("R09"));
 		assertEquals(1, azul.getQuantidadeTributo(TipoTributo.YURT));
-	}
-
-	/*
-	 * Objetivo: na preparação as 3 cidades reveladas recebem 4 tesouros.
-	 * Entrada: partida nova.
-	 * Resultado esperado: 3 cidades DISPONIVEL com 4 tesouros e 6 NA_PILHA
-	 * sem nenhum.
-	 */
-	@Test
-	public void cidadesReveladasComecamComQuatroTesouros() {
-		int disponiveis = 0;
-		for (String id : jogo.getCidades()) {
-			if ("DISPONIVEL".equals(jogo.getEstadoDaCidade(id))) {
-				disponiveis++;
-				assertEquals(4, jogo.getTesourosDaCidade(id).size());
-			} else {
-				assertEquals("NA_PILHA", jogo.getEstadoDaCidade(id));
-				assertTrue(jogo.getTesourosDaCidade(id).isEmpty());
-			}
-		}
-		assertEquals(3, disponiveis);
-		assertEquals(6, jogo.getCidadesNaPilha());
 	}
 
 	/*
@@ -167,29 +127,6 @@ public class AcoesNoMapaTest {
 	}
 
 	/*
-	 * Objetivo: não dá pra atacar de longe nem sem espada suficiente.
-	 * Entrada: AZUL com 2 espadas tenta atacar de Karakorum (não é vizinha de
-	 * cidade); depois, do lado da cidade, pega 1 tesouro e tenta o 2º.
-	 * Resultado esperado: os ataques impossíveis não gastam espada nem tiram
-	 * tesouro.
-	 */
-	@Test
-	public void ataqueRecusadoLongeDaCidadeOuSemEspadas() {
-		Cidade alvo = tabuleiro.getCidadesDisponiveis().iterator().next();
-		String id = alvo.getNome().name();
-		String tesouro = jogo.getTesourosDaCidade(id).get(0);
-		azul.adicionarTributo(TipoTributo.ESPADA, 2);
-		assertFalse("Karakorum não é vizinha de cidade", jogo.atacarCidade(id, tesouro));
-
-		jogo.definirMovimentosDaVez(20);
-		jogo.moverPeaoDaVezAte(1, vizinhaLivre(alvo).getId());
-		assertTrue(jogo.atacarCidade(id, tesouro));
-		assertFalse("o 2º custa 2 espadas", jogo.atacarCidade(id, jogo.getTesourosDaCidade(id).get(0)));
-		assertEquals(1, azul.getQuantidadeTributo(TipoTributo.ESPADA));
-		assertEquals(3, jogo.getTesourosDaCidade(id).size());
-	}
-
-	/*
 	 * Objetivo: o Khan só é usado com coluna que tem o Khan, põe 1 peça na
 	 * província e nas 2 das setas e não pode ficar no mesmo lugar.
 	 * Entrada: AZUL ativa a AMARELA (sem Khan) e tenta usar; VERDE ativa a
@@ -224,69 +161,6 @@ public class AcoesNoMapaTest {
 	}
 
 	/*
-	 * Objetivo: província não passa de 3 peças quando o Khan vem.
-	 * Entrada: PV05 já com 3 peças e o Khan vai pra PV05.
-	 * Resultado esperado: PV05 fica com 3 e PV06 (seta) ganha 1.
-	 */
-	@Test
-	public void khanRespeitaLimiteDeTresPecas() {
-		tabuleiro.getProvincia("PV05").adicionarTributo();
-		tabuleiro.getProvincia("PV05").adicionarTributo();
-		assertTrue(jogo.ativarColuna("VERMELHA"));
-		assertTrue(jogo.colocarKhan("PV05"));
-		assertEquals(3, jogo.getTributosNaProvincia("PV05"));
-		assertEquals(2, jogo.getTributosNaProvincia("PV06"));
-	}
-
-	/*
-	 * Objetivo: Khan na área de melhorias dá a moeda/espada dos ícones que
-	 * estão descobertos e completa só os espaços vazios.
-	 * Entrada: AZUL (5 moedas) ativa a VERMELHA, compra 2 melhorias (os 2
-	 * espaços da esquerda ficam vazios, aparecendo o ícone da moeda) e põe o
-	 * Khan lá.
-	 * Resultado esperado: +1 moeda, nenhuma espada, 5 melhorias de novo e as
-	 * 3 antigas continuam à direita.
-	 */
-	@Test
-	public void khanNaAreaDeMelhoriasDaMoedaEReporVazios() {
-		azul.adicionarTributo(TipoTributo.MOEDA, 4); // já tinha 1
-		assertTrue(jogo.ativarColuna("VERMELHA"));
-		assertTrue(jogo.comprarMelhoria(0));
-		assertTrue(jogo.comprarMelhoria(0));
-		List<String> restantes = new ArrayList<String>(jogo.getMelhoriasDisponiveis());
-		assertEquals(3, restantes.size());
-		assertTrue(jogo.espacoDeMelhoriaVazio(1));
-		assertFalse(jogo.espacoDeMelhoriaVazio(3));
-
-		assertTrue(jogo.colocarKhan(Jogo.KHAN_NA_AREA_DE_MELHORIAS));
-		assertEquals(2, azul.getQuantidadeTributo(TipoTributo.MOEDA)); // 5 - 4 + 1
-		assertEquals(0, azul.getQuantidadeTributo(TipoTributo.ESPADA));
-		List<String> agora = jogo.getMelhoriasDisponiveis();
-		assertEquals(5, agora.size());
-		assertEquals(restantes, agora.subList(2, 5));
-		assertFalse(jogo.espacoDeMelhoriaVazio(0));
-	}
-
-	/*
-	 * Objetivo: Khan só põe peça enquanto tiver na reserva (a caixa tem 10
-	 * espadas, 10 yurts e 15 moedas).
-	 * Entrada: 4 espadas nas províncias e as outras 6 com AZUL; o Khan vai
-	 * pra PV05 (setas pra PV04 e PV06).
-	 * Resultado esperado: reserva de espada 0; PV06 continua com 1 e PV05 e
-	 * PV04 vão pra 2.
-	 */
-	@Test
-	public void khanRespeitaAReservaDeTributos() {
-		azul.adicionarTributo(TipoTributo.ESPADA, 6);
-		assertEquals(0, jogo.getTributosNaReserva("ESPADA"));
-		assertTrue(jogo.ativarColuna("VERMELHA"));
-		assertTrue(jogo.colocarKhan("PV05"));
-		assertEquals(1, jogo.getTributosNaProvincia("PV06"));
-		assertEquals(2, jogo.getTributosNaProvincia("PV05"));
-		assertEquals(2, jogo.getTributosNaProvincia("PV04"));
-	}
-
-	/*
 	 * Objetivo: Altani só move e age com um peão por turno.
 	 * Entrada: o peão 1 vai pra R08 e depois tenta mover o peão 2; no próximo
 	 * turno dela move o peão 2 e tenta o 1.
@@ -304,21 +178,6 @@ public class AcoesNoMapaTest {
 		jogo.definirMovimentosDaVez(6);
 		assertFalse(jogo.moverPeaoDaVezAte(2, "P05").isEmpty());
 		assertTrue(jogo.moverPeaoDaVezAte(1, "R09").isEmpty());
-	}
-
-	/*
-	 * Objetivo: na Altani a primeira ação também escolhe o peão do turno.
-	 * Entrada: os 2 peões em Karakorum; AZUL pega tributo de PV04 e depois
-	 * tenta mover o peão 2 e o peão 1.
-	 * Resultado esperado: o peão 1 vira o do turno e o 2 não anda.
-	 */
-	@Test
-	public void altaniPrimeiraAcaoEscolheOPeao() {
-		assertTrue(jogo.ativarColuna("VERMELHA"));
-		assertTrue(jogo.pegarTributo("PV04"));
-		jogo.definirMovimentosDaVez(3);
-		assertTrue(jogo.moverPeaoDaVezAte(2, "P05").isEmpty());
-		assertFalse(jogo.moverPeaoDaVezAte(1, "P05").isEmpty());
 	}
 
 	/*

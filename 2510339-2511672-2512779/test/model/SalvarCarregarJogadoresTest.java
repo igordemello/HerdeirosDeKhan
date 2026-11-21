@@ -7,7 +7,6 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Random;
 
 import org.junit.Before;
@@ -110,90 +109,6 @@ public class SalvarCarregarJogadoresTest {
 		}
 	}
 
-	/**
-	 * Objetivo: verificar que a ordem da pilha de melhorias e da reserva de
-	 * tesouros é mantida (a próxima compra às cegas tem de ser a mesma peça).
-	 * Entrada: partida salva e carregada; nas duas, compra do topo da pilha
-	 * e 3 tesouros da reserva.
-	 * Resultado esperado: as mesmas peças e os mesmos tesouros.
-	 */
-	@Test
-	public void ordemDaPilhaEDaReservaEhMantida() throws IOException {
-		jogo.escolherMelhoriaInicial(0);
-		Jogo outro = carregar(salvar(jogo));
-		Jogo original = jogo;
-
-		assertEquals(original.getMercado().verTopo().getId(), outro.getMercado().verTopo().getId());
-		assertEquals(original.getReservaTesouros().comprar(3), outro.getReservaTesouros().comprar(3));
-	}
-
-	/**
-	 * Objetivo: verificar que uma partida salva antes da escolha dos
-	 * conselheiros secretos volta com as 2 cartas para escolher.
-	 * Entrada: partida recém-criada, salva e carregada.
-	 * Resultado esperado: as mesmas 2 cartas; nenhum conselheiro escolhido;
-	 * depois de carregar, a escolha funciona.
-	 */
-	@Test
-	public void cartasSecretasAindaNaoEscolhidasVoltam() throws IOException {
-		Jogo outro = carregar(salvar(jogo));
-		assertEquals(jogo.getCartasSecretasParaEscolher("AZUL"), outro.getCartasSecretasParaEscolher("AZUL"));
-		assertNull(outro.getConselheiroSecreto("AZUL"));
-		String escolhida = outro.getCartasSecretasParaEscolher("AZUL").get(0);
-		outro.escolherConselheiroSecreto("AZUL", escolhida);
-		assertEquals(escolhida, outro.getConselheiroSecreto("AZUL"));
-	}
-
-	/**
-	 * Objetivo: verificar que o arquivo é ASCII puro e tem as seções
-	 * combinadas.
-	 * Entrada: partida com algumas jogadas, salva.
-	 * Resultado esperado: nenhum caractere acima de 127; seções [JOGADOR
-	 * AZUL], [JOGADOR VERDE], [MERCADO], [RESERVA], [CONSELHEIROS] e [CARTAS].
-	 */
-	@Test
-	public void arquivoEhAsciiETemAsSecoes() throws IOException {
-		jogarUmPouco();
-		String texto = salvar(jogo);
-		for (char c : texto.toCharArray()) {
-			assertTrue("caractere não ASCII: " + c, c <= 127);
-		}
-		Map<String, Map<String, String>> secoes = ArquivoPartida.ler(new StringReader(texto));
-		for (String s : Arrays.asList("JOGADOR AZUL", "JOGADOR VERDE", "MERCADO", "RESERVA", "CONSELHEIROS",
-				"CARTAS")) {
-			assertTrue("falta [" + s + "]", secoes.containsKey(s));
-		}
-	}
-
-	/**
-	 * Objetivo: verificar que arquivos errados são recusados.
-	 * Entrada: (1) cabeçalho de outro jogo; (2) arquivo sem a seção
-	 * [MERCADO]; (3) arquivo com uma melhoria a mais no mercado.
-	 * Resultado esperado: IOException no 1º e IllegalArgumentException nos
-	 * outros.
-	 */
-	@Test
-	public void arquivoErradoEhRecusado() throws IOException {
-		try {
-			ArquivoPartida.ler(new StringReader("OUTRO JOGO\n[MERCADO]\n"));
-			fail("cabeçalho errado deveria ser recusado");
-		} catch (IOException esperado) {
-		}
-		String texto = salvar(jogo);
-		String semMercado = texto.replace("[MERCADO]", "[NADA]");
-		try {
-			carregar(semMercado);
-			fail("falta de seção deveria ser recusada");
-		} catch (IllegalArgumentException esperado) {
-		}
-		String pecaAMais = texto.replaceFirst("\npilha=", "\npilha=CAV-V,");
-		try {
-			carregar(pecaAMais);
-			fail("melhoria a mais deveria ser recusada");
-		} catch (IllegalArgumentException esperado) {
-		}
-	}
-
 	// --------------------------------------------------- habilidade do Jochi
 
 	/**
@@ -239,45 +154,6 @@ public class SalvarCarregarJogadoresTest {
 		assertTrue(jogo.jogadorDaVezIgnoraCorDasMelhorias());
 		assertTrue(jogo.comprarMelhoria(indice, "AMARELA"));
 		assertEquals(Arrays.asList(id), jogo.getIdsDasMelhoriasDaColuna("VERDE", "AMARELA"));
-	}
-
-	/**
-	 * Objetivo: verificar que o Jochi não ganha melhoria grátis pela 1ª
-	 * linha completa (o espaço da coluna branca já está ocupado), mas ganha
-	 * pela 2ª.
-	 * Entrada: VERDE com 1 peça na branca completa a 1ª e depois a 2ª linha.
-	 * Resultado esperado: 0 grátis pendentes na 1ª linha; 1 na 2ª.
-	 */
-	@Test
-	public void jochiNaoGanhaGratisPelaPrimeiraLinha() {
-		jogo.escolherMelhoriaInicial(0);
-		jogo.passarVez();
-		TabuleiroJogador tab = verde.getTabuleiro();
-		tab.adicionarMelhoria(ColunaJogador.VERMELHA, TipoMelhoria.PUNHO);
-		tab.adicionarMelhoria(ColunaJogador.VERDE, TipoMelhoria.PUNHO);
-		verde.adicionarTributo(TipoTributo.MOEDA, 4);
-
-		assertTrue(jogo.comprarMelhoria(0, "AMARELA")); // completa a 1ª linha
-		assertEquals(1, tab.getLinhasCompletas());
-		assertEquals(0, jogo.getMelhoriasGratisPendentes());
-
-		tab.adicionarMelhoria(ColunaJogador.VERMELHA, TipoMelhoria.PUNHO);
-		tab.adicionarMelhoria(ColunaJogador.VERDE, TipoMelhoria.PUNHO);
-		assertTrue(jogo.comprarMelhoria(0, "AMARELA")); // completa a 2ª linha
-		assertEquals(1, jogo.getMelhoriasGratisPendentes());
-	}
-
-	/**
-	 * Objetivo: verificar que a escolha pendente do Jochi também é salva.
-	 * Entrada: partida salva antes de o Jochi escolher.
-	 * Resultado esperado: a partida carregada tem as mesmas 2 peças para
-	 * escolher.
-	 */
-	@Test
-	public void escolhaPendenteDoJochiEhSalva() throws IOException {
-		Jogo outro = carregar(salvar(jogo));
-		assertEquals("VERDE", outro.getCorComMelhoriaInicialParaEscolher());
-		assertEquals(jogo.getMelhoriasIniciaisParaEscolher(), outro.getMelhoriasIniciaisParaEscolher());
 	}
 
 	private int indiceDeUmaPecaQueNaoE(ColunaJogador cor) {

@@ -19,10 +19,14 @@ import model.Jogo;
 /**
  * Resultado da partida (págs. 14-16): os votos de cada jogador (Kurultai,
  * influência nas regiões e conselheiro secreto), os tesouros não entregues
- * (1º desempate) e o vencedor. É modal: o Controller espera ela ser fechada.
+ * (1º desempate) e o vencedor. No fim pergunta se os jogadores querem jogar
+ * de novo ou fechar o programa. É modal: o Controller espera ela ser fechada
+ * e depois lê a resposta em {@link #querJogarDeNovo()}.
  */
 public class JanelaFimDeJogo extends JDialog {
 	private static final long serialVersionUID = 1L;
+
+	private boolean jogarDeNovo = false;
 
 	public JanelaFimDeJogo(Window dono, Jogo jogo) {
 		super(dono, "Fim de jogo", ModalityType.APPLICATION_MODAL);
@@ -48,10 +52,17 @@ public class JanelaFimDeJogo extends JDialog {
 		resultado.setFont(resultado.getFont().deriveFont(Font.BOLD, 22f));
 		resultado.setBorder(BorderFactory.createEmptyBorder(12, 12, 0, 12));
 
-		JButton botaoFechar = new JButton("Voltar ao início");
-		botaoFechar.addActionListener(new TratadorFechar());
-		JPanel rodape = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		JLabel pergunta = new JLabel("Querem iniciar uma nova partida?");
+		pergunta.setFont(pergunta.getFont().deriveFont(Font.BOLD, 14f));
+		JButton botaoJogarDeNovo = new JButton("Jogar de novo");
+		botaoJogarDeNovo.addActionListener(new TratadorEscolha(true));
+		JButton botaoFechar = new JButton("Fechar o programa");
+		botaoFechar.addActionListener(new TratadorEscolha(false));
+		JPanel rodape = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 10));
+		rodape.add(pergunta);
+		rodape.add(botaoJogarDeNovo);
 		rodape.add(botaoFechar);
+		getRootPane().setDefaultButton(botaoJogarDeNovo);
 
 		setLayout(new BorderLayout());
 		add(resultado, BorderLayout.NORTH);
@@ -65,9 +76,21 @@ public class JanelaFimDeJogo extends JDialog {
 		return "<td align='center'>" + valor + "</td>";
 	}
 
-	private class TratadorFechar implements ActionListener {
+	/** Resposta à pergunta, depois que a janela fecha. Fechar no X conta como "não". */
+	public boolean querJogarDeNovo() {
+		return jogarDeNovo;
+	}
+
+	private class TratadorEscolha implements ActionListener {
+		private final boolean resposta;
+
+		TratadorEscolha(boolean resposta) {
+			this.resposta = resposta;
+		}
+
 		@Override
 		public void actionPerformed(ActionEvent e) {
+			jogarDeNovo = resposta;
 			dispose();
 		}
 	}

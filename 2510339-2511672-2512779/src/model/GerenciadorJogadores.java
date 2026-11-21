@@ -86,6 +86,14 @@ class GerenciadorJogadores {
 		return jogadores.get(ordem.get(0));
 	}
 
+	/** Usado ao continuar uma partida salva: a vez é do jogador nessa posição. */
+	void setIndiceDaVez(int indice) {
+		if (indice < 0 || indice >= ordem.size()) {
+			throw new IllegalArgumentException("Vez inválida: " + indice);
+		}
+		indiceDaVez = indice;
+	}
+
 	/** Passa a vez para o próximo jogador no sentido horário. */
 	Jogador passarVez() {
 		indiceDaVez = (indiceDaVez + 1) % ordem.size();

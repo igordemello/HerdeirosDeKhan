@@ -104,6 +104,8 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 
 	private final JComboBox<String> comboColunas = new JComboBox<String>();
 	private final JButton botaoAtivar = new JButton("Ativar");
+	/** Salva a partida (4ª iteração); quem trata o clique é o Controller. */
+	private final JButton botaoSalvar = new JButton("Salvar");
 	private final JComboBox<Integer> comboMovimentos = new JComboBox<Integer>();
 	private final JLabel rotuloColuna = new JLabel("Coluna:");
 	private final JLabel rotuloMovimentos = new JLabel("Mov.:");
@@ -131,7 +133,14 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		setPreferredSize(new Dimension(LARGURA, 700));
 		setLayout(new BorderLayout());
 		// os controles ficam logo abaixo da área desenhada em paintComponent
-		add(Box.createVerticalStrut(ALTURA_DESENHO), BorderLayout.NORTH);
+		// o botão Salvar fica no canto de cima, ao lado do nome do jogador; o
+		// painel é transparente e sem tratador, então os cliques no desenho
+		// continuam chegando a este painel
+		JPanel topo = new JPanel(new FlowLayout(FlowLayout.RIGHT, MARGEM, MARGEM));
+		topo.setOpaque(false);
+		topo.setPreferredSize(new Dimension(LARGURA, ALTURA_DESENHO));
+		topo.add(botaoSalvar);
+		add(topo, BorderLayout.NORTH);
 		JPanel envoltorio = new JPanel(new BorderLayout());
 		envoltorio.setOpaque(false);
 		envoltorio.add(criarPainelDeControles(), BorderLayout.NORTH);
@@ -183,6 +192,9 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		} finally {
 			atualizandoComponentes = false;
 		}
+		botaoSalvar.setEnabled(jogo.podeSalvar());
+		botaoSalvar.setToolTipText(jogo.podeSalvar() ? "Salvar a partida num arquivo"
+				: "Só dá para salvar no começo do turno, antes de qualquer jogada");
 		recursos.atualizar();
 		barraDoTurno.atualizar();
 		// as janelas de melhorias, entregas e cartas são observadoras e se atualizam sozinhas
@@ -198,6 +210,10 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 
 	public JButton getBotaoHabilidade() {
 		return barraDoTurno.getBotaoHabilidade();
+	}
+
+	public JButton getBotaoSalvar() {
+		return botaoSalvar;
 	}
 
 	public void mostrarMensagem(String texto) {

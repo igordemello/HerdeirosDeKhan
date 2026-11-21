@@ -1,6 +1,11 @@
 package model;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -47,6 +52,10 @@ public class Jogo implements ObservadoIF {
 	private ColunaJogador colunaAtivadaNaVez = null;
 	/** Movimentos (cavalos) que o jogador da vez tem neste turno. */
 	private int movimentosDaVez = 0;
+	/** Turnos que faltam depois do fim disparado; -1 enquanto ele não foi disparado. */
+	private int turnosAteOFim = -1;
+	/** Se o jogador da vez já fez alguma jogada neste turno (aí não dá mais para salvar). */
+	private boolean turnoComecou = false;
 
 	// --- melhorias, tesouros, conselheiros e bônus (parte do Rafael) ---
 	/** Preço de uma melhoria, em moedas (pág. 11). */
@@ -154,12 +163,37 @@ public class Jogo implements ObservadoIF {
 	/** Passa a vez e retorna a cor do próximo jogador. */
 	public String passarVez() {
 		encerrarTurnoDaVez();
+		contarTurnosAteOFim();
 		colunaAtivadaNaVez = null;
 		movimentosDaVez = 0;
 		Jogador proximo = gerenciador.passarVez();
 		turnoNoMapa.iniciar(proximo, tabuleiro);
-		mudouEstado();
+		turnoComecou = false; // o próximo ainda não jogou: já dá para salvar
+		avisarObservadores();
 		return proximo.getCor().name();
+	}
+
+	/**
+	 * Fim de jogo (pág. 14): quando ele é disparado, a rodada atual termina e
+	 * todos jogam mais uma vez. Chamado no fim do turno, antes de passar a vez.
+	 */
+	private void contarTurnosAteOFim() {
+		if (turnosAteOFim < 0 && fimDeJogoDisparado()) {
+			int n = gerenciador.getNumeroDeJogadores();
+			turnosAteOFim = (n - 1 - get(VEZ)) + n; // os que faltam nesta rodada + uma rodada completa
+		} else if (turnosAteOFim > 0) {
+			turnosAteOFim--;
+		}
+	}
+
+	/** Turnos que ainda faltam até o fim da partida, ou -1 se o fim não foi disparado. */
+	public int getTurnosAteOFim() {
+		return turnosAteOFim;
+	}
+
+	/** Se a última rodada já foi jogada: é hora de mostrar o resultado. */
+	public boolean partidaAcabou() {
+		return turnosAteOFim == 0;
 	}
 
 	// ------------------------------------------------- tabuleiro do jogador
@@ -982,7 +1016,7 @@ public class Jogo implements ObservadoIF {
 		for (CartaConselheiroSecreto c : j.getCartasSecretasRecebidas()) {
 			if (c.getTipo() == t) {
 				distribuidor.escolherConselheiroSecreto(j, c.getId());
-				mudouEstado();
+				avisarObservadores(); // preparação, não é jogada: ainda dá para salvar
 				return;
 			}
 		}
@@ -1567,7 +1601,7 @@ public class Jogo implements ObservadoIF {
 		TabuleiroJogador tab = jochi.getTabuleiro();
 		tab.adicionarMelhoria(ColunaJogador.BRANCA, escolhida);
 		tab.encerrarTurno(); // colocada na preparação: vale desde o primeiro turno
-		mudouEstado();
+		avisarObservadores(); // preparação, não é jogada: ainda dá para salvar
 		return true;
 	}
 
@@ -1678,6 +1712,91 @@ public class Jogo implements ObservadoIF {
 		mudouEstado();
 	}
 
+	// ------------------------------------ salvar e carregar a partida (4ª it.)
+	// Parte do Igor: junta as partes do Rafael e do Arthur num arquivo só. A
+	// seção [PARTIDA] guarda as cores na ordem de jogo, de quem é a vez e
+	// quantos turnos faltam para o fim (se ele já foi disparado).
+
+	static final String SECAO_PARTIDA = "PARTIDA";
+
+	/**
+	 * Só se salva no começo de um turno, antes de o jogador da vez fazer
+	 * qualquer jogada: o que vale só durante o turno não vai para o arquivo.
+	 */
+	public boolean podeSalvar() {
+		return !turnoComecou;
+	}
+
+	/**
+	 * Salva a partida num arquivo texto.
+	 *
+	 * @throws IllegalStateException se o jogador da vez já começou o turno
+	 * @throws IOException           se não der para gravar o arquivo
+	 */
+	public void salvar(File arquivo) throws IOException {
+		if (!podeSalvar()) {
+			throw new IllegalStateException("Só dá para salvar no começo do turno");
+		}
+		PrintWriter saida = new PrintWriter(new FileWriter(arquivo));
+		salvar(saida);
+		boolean erro = saida.checkError(); // o PrintWriter não lança IOException
+		saida.close();
+		if (erro) {
+			throw new IOException("Não foi possível gravar " + arquivo.getName());
+		}
+	}
+
+	/** Escreve o arquivo inteiro: cabeçalho, [PARTIDA] e as partes do Rafael e do Arthur. */
+	void salvar(PrintWriter saida) {
+		saida.println(ArquivoPartida.CABECALHO);
+		ArquivoPartida.secao(saida, SECAO_PARTIDA);
+		ArquivoPartida.linha(saida, "cores", ArquivoPartida.juntar(getCores()));
+		ArquivoPartida.linha(saida, "vez", get(VEZ));
+		ArquivoPartida.linha(saida, "turnosAteOFim", turnosAteOFim);
+		salvarParteDosJogadores(saida);
+		salvarParteDoMapa(saida);
+	}
+
+	/**
+	 * Continua uma partida salva: cria uma partida com as cores do arquivo e
+	 * troca o estado dela pelo do arquivo. Só se tudo der certo ela passa a
+	 * ser a instância do jogo (Singleton); senão nada muda.
+	 *
+	 * @throws IOException se não der para ler o arquivo ou ele for inválido
+	 */
+	public static Jogo carregar(File arquivo) throws IOException {
+		Reader entrada = new FileReader(arquivo);
+		try {
+			return carregar(entrada, FabricaTabuleiro.criarTabuleiroPadrao(), new Random());
+		} finally {
+			entrada.close();
+		}
+	}
+
+	/** Usado também pelos testes, com um mapa pequeno e semente fixa. */
+	static Jogo carregar(Reader entrada, Tabuleiro tabuleiro, Random aleatorio) throws IOException {
+		Map<String, Map<String, String>> secoes = ArquivoPartida.ler(entrada);
+		try {
+			Map<String, String> partida = ArquivoPartida.secaoObrigatoria(secoes, SECAO_PARTIDA);
+			Jogo jogo = new Jogo(converterCores(ArquivoPartida.lista(partida, "cores")), tabuleiro, aleatorio);
+			jogo.carregarParteDosJogadores(secoes);
+			// a vez antes do mapa: o Arthur prepara o turno de quem vai jogar
+			jogo.gerenciador.setIndiceDaVez(ArquivoPartida.inteiro(partida, "vez"));
+			jogo.carregarParteDoMapa(secoes);
+			int turnos = ArquivoPartida.inteiro(partida, "turnosAteOFim");
+			if (turnos < -1 || turnos == 0) {
+				throw new IllegalArgumentException("turnosAteOFim inválido: " + turnos);
+			}
+			jogo.turnosAteOFim = turnos;
+			jogo.turnoComecou = false;
+			instancia = jogo;
+			return jogo;
+		} catch (RuntimeException e) {
+			// arquivo editado ou estragado: cor, número, peça ou seção inválida
+			throw new IOException("Arquivo de partida inválido: " + e.getMessage(), e);
+		}
+	}
+
 	// ----------------------------------------------------------- apoio
 
 	private Jogador jogadorDaVez() {
@@ -1737,8 +1856,14 @@ public class Jogo implements ObservadoIF {
 		throw new IllegalArgumentException("Código inválido: " + i);
 	}
 
-	/** Ponto único de aviso de mudança de estado: notifica todos os observadores. */
+	/** Uma jogada mudou o estado: o turno começou e os observadores são avisados. */
 	private void mudouEstado() {
+		turnoComecou = true;
+		avisarObservadores();
+	}
+
+	/** Notifica todos os observadores. */
+	private void avisarObservadores() {
 		// cópia: um observador pode se cadastrar ou sair durante o aviso (ex.: abrir uma janela)
 		for (ObservadorIF o : new ArrayList<ObservadorIF>(observadores)) {
 			o.notify(this);
@@ -1750,8 +1875,8 @@ public class Jogo implements ObservadoIF {
 	/**
 	 * Fim de jogo disparado (pág. 14): a ficha branca, que soma os votos de
 	 * todos os jogadores, chegou a 10/14/16/17 para 2/3/4/5 jogadores, ou
-	 * todas as cidades foram conquistadas. Depois disso o Controller termina
-	 * a rodada atual e faz mais uma rodada completa.
+	 * todas as cidades foram conquistadas. Depois disso a rodada atual termina
+	 * e todos jogam mais uma vez ({@link #getTurnosAteOFim()}).
 	 */
 	public boolean fimDeJogoDisparado() {
 		int total = 0;

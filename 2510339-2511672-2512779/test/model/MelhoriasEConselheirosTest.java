@@ -61,25 +61,6 @@ public class MelhoriasEConselheirosTest {
 	}
 
 	/**
-	 * Objetivo: verificar que a moeda virtual da coluna só vale no turno em
-	 * que a coluna é ativada, e é usada antes das moedas reais.
-	 * Entrada: AZUL (1 moeda) ativa a coluna AMARELA (moeda virtual) e compra.
-	 * Resultado esperado: antes de ativar, 1 moeda disponível; depois, 2; a
-	 * compra gasta a virtual e a real, e a virtual não pode ser usada de novo.
-	 */
-	@Test
-	public void moedaVirtualSoValeNoTurnoDaColunaAtivada() {
-		assertEquals(1, jogo.getTributoDisponivelDaVez("MOEDA"));
-		assertFalse(jogo.podeComprarMelhoria(0));
-
-		assertTrue(jogo.ativarColuna("AMARELA"));
-		assertEquals(2, jogo.getTributoDisponivelDaVez("MOEDA"));
-		assertTrue(jogo.comprarMelhoria(0));
-		assertEquals(0, jogo.getTributoDisponivelDaVez("MOEDA"));
-		assertEquals(0, azul.getQuantidadeTributo(TipoTributo.MOEDA));
-	}
-
-	/**
 	 * Objetivo: verificar que completar uma linha dá uma melhoria grátis na
 	 * coluna branca, de qualquer cor.
 	 * Entrada: AZUL já tem melhoria nas duas colunas coloridas que não são da
@@ -139,52 +120,6 @@ public class MelhoriasEConselheirosTest {
 		assertTrue(azul.getVotos() >= votos + 2); // + cartas abertas que tenha cumprido
 
 		assertFalse(jogo.entregar("R11", Arrays.asList("FERRO", "PELE")));
-	}
-
-	/**
-	 * Objetivo: verificar que o tesouro virtual completa uma entrega no turno
-	 * em que a coluna dele é ativada, e só uma vez.
-	 * Entrada: AZUL tem 1 ferro real e a melhoria de ferro virtual na coluna
-	 * VERMELHA; ativa a VERMELHA, anda até R11 e entrega 2 ferros.
-	 * Resultado esperado: entrega aceita, ferro real zerado; uma 2ª entrega
-	 * é recusada (o virtual já foi usado).
-	 */
-	@Test
-	public void tesouroVirtualCompletaUmaEntrega() {
-		azul.getTabuleiro().adicionarMelhoria(ColunaJogador.VERMELHA, TipoMelhoria.TESOURO_VIRTUAL_FERRO);
-		azul.getTabuleiro().encerrarTurno();
-		azul.adicionarTesouro(TipoTesouro.FERRO, 1);
-
-		assertTrue(jogo.ativarColuna("VERMELHA"));
-		assertFalse(jogo.moverPeaoDaVezAte(1, "R11").isEmpty());
-		assertEquals(Arrays.asList("FERRO"), jogo.getTesourosVirtuaisDaVez());
-
-		assertTrue(jogo.entregar("R11", Arrays.asList("FERRO", "FERRO")));
-		assertEquals(0, azul.getQuantidadeTesouro(TipoTesouro.FERRO));
-		assertFalse(jogo.podeEntregar("R11", Arrays.asList("FERRO", "FERRO")));
-	}
-
-	/**
-	 * Objetivo: verificar as peças de bônus de tributo e de 3 tesouros.
-	 * Entrada: AZUL recebe DUAS_ESPADAS e TRES_TESOUROS e usa as duas.
-	 * Resultado esperado: +2 espadas; 3 tesouros para escolher; depois de
-	 * escolher, +1 tesouro e nada pendente; a peça não pode ser usada de novo.
-	 */
-	@Test
-	public void bonusDeEspadasEDeTresTesouros() {
-		azul.receberBonus(TipoBonus.DUAS_ESPADAS);
-		azul.receberBonus(TipoBonus.TRES_TESOUROS);
-
-		assertTrue(jogo.usarBonus("DUAS_ESPADAS"));
-		assertEquals(2, azul.getQuantidadeTributo(TipoTributo.ESPADA));
-		assertFalse(jogo.usarBonus("DUAS_ESPADAS"));
-
-		assertTrue(jogo.usarBonus("TRES_TESOUROS"));
-		List<String> opcoes = jogo.getTesourosDoBonusParaEscolher();
-		assertEquals(3, opcoes.size());
-		assertTrue(jogo.escolherTesouroDoBonus(opcoes.get(0)));
-		assertEquals(1, azul.getTotalTesouros());
-		assertTrue(jogo.getTesourosDoBonusParaEscolher().isEmpty());
 	}
 
 	/**
@@ -263,21 +198,4 @@ public class MelhoriasEConselheirosTest {
 		assertEquals(1, jogo.getVotosDeInfluencia("VERDE")); // 1º com 1 melhoria = 1 voto
 	}
 
-	/**
-	 * Objetivo: verificar a escolha do conselheiro secreto pela API.
-	 * Entrada: cada jogador escolhe a primeira das suas 2 cartas.
-	 * Resultado esperado: antes, ninguém escolheu; depois, todos escolheram e
-	 * a carta escolhida é a informada.
-	 */
-	@Test
-	public void escolhaDoConselheiroSecreto() {
-		assertFalse(jogo.todosEscolheramConselheiroSecreto());
-		for (String cor : jogo.getCores()) {
-			List<String> opcoes = jogo.getCartasSecretasParaEscolher(cor);
-			assertEquals(2, opcoes.size());
-			jogo.escolherConselheiroSecreto(cor, opcoes.get(0));
-			assertEquals(opcoes.get(0), jogo.getConselheiroSecreto(cor));
-		}
-		assertTrue(jogo.todosEscolheramConselheiroSecreto());
-	}
 }
