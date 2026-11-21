@@ -1647,6 +1647,37 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
+	// ---------------------------------------- salvar e carregar o mapa (4ª it.)
+	// Parte do Arthur: peões, yurts, tributos das províncias, cidades (com os
+	// tesouros e a pilha) e o Khan, tudo na seção [MAPA].
+	//
+	// Ordem pro Jogo.carregar: carregar primeiro a parte dos jogadores e a vez
+	// (quem joga agora), e só depois esta. É que aqui eu confiro se os yurts
+	// do mapa + os da reserva de cada jogador dão 12, e preparo o turno de
+	// quem vai jogar.
+
+	static final String SECAO_MAPA = "MAPA";
+
+	void salvarParteDoMapa(PrintWriter saida) {
+		ArquivoPartida.secao(saida, SECAO_MAPA);
+		tabuleiro.salvar(saida, gerenciador.getJogadoresEmOrdem());
+	}
+
+	void carregarParteDoMapa(Map<String, Map<String, String>> secoes) {
+		tabuleiro.carregar(ArquivoPartida.secaoObrigatoria(secoes, SECAO_MAPA), gerenciador.getJogadoresEmOrdem());
+		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
+			int total = tabuleiro.contarYurtsNoMapa(j.getCor()) + j.getYurtsDisponiveis();
+			if (total != Jogador.YURTS_INICIAIS) {
+				throw new IllegalArgumentException("O jogador " + j.getCor() + " ficou com " + total
+						+ " yurts (mapa + reserva); tem que ser " + Jogador.YURTS_INICIAIS);
+			}
+		}
+		// o que é só do turno (paradas por onde passou, punhos, ataques, Khan
+		// usado) começa do zero, a partir de onde os peões estão agora
+		turnoNoMapa.iniciar(jogadorDaVez(), tabuleiro);
+		mudouEstado();
+	}
+
 	// ----------------------------------------------------------- apoio
 
 	private Jogador jogadorDaVez() {

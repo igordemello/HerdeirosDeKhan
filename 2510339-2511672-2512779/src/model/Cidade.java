@@ -144,4 +144,14 @@ class Cidade {
 	public String toString() {
 		return nome.getNome() + " (" + estado + ")";
 	}
+
+	// Usado ao carregar uma partida salva: põe a cidade direto no estado do
+	// arquivo. Quem chama (o Tabuleiro) já conferiu se os dados fazem sentido.
+	void restaurar(Estado novoEstado, Cor novoConquistador, boolean comYurt, List<TipoTesouro> novosTesouros) {
+		estado = novoEstado;
+		conquistador = novoConquistador;
+		temYurtDoConquistador = comYurt;
+		tesouros.clear();
+		tesouros.addAll(novosTesouros);
+	}
 }

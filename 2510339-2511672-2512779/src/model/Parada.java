@@ -200,4 +200,12 @@ class Parada {
 	public String toString() {
 		return id + " (" + tipo + (regiao == null ? "" : ", " + regiao.getNome()) + ")";
 	}
+
+	// ------------------------------------------------- carregar partida
+
+	// tira todos os peões e yurts (o Tabuleiro coloca de novo os do arquivo)
+	void esvaziar() {
+		peoes.clear();
+		yurts.clear();
+	}
 }

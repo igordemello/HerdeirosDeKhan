@@ -1,0 +1,6 @@
+Arthur Guimarães - 2510339
+Rafael Solberg - 2511672
+Igor de Mello - 2512779
+
+Classe: ControladorInicio 
+

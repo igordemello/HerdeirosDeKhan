@@ -1,16 +1,19 @@
 package model;
 
+import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
 
 /*
  * Tabuleiro principal: o mapa com as paradas, as províncias e as cidades,
@@ -611,5 +614,251 @@ class Tabuleiro {
 			throw new IllegalArgumentException("Província inexistente: " + id);
 		}
 		return provincia;
+	}
+
+	// ===================================================== salvar e carregar
+	// Parte do Arthur na 4ª iteração: tudo o que fica no mapa vai na seção
+	// [MAPA]. O que só vale durante um turno não entra, porque o jogo só
+	// salva antes de um jogador começar a jogar. Exemplo:
+	//
+	//   khan=PV05                        (vazio = Khan ainda fora do tabuleiro)
+	//   pilhaDeCidades=SARAI,KIEV        (do fundo pro topo da pilha)
+	//   tributos=PV01:1,PV02:0,...
+	//   peao.AZUL.1=R08
+	//   yurts.R08=AZUL                   (só as paradas que têm yurt)
+	//   cidade.KIEV=DISPONIVEL
+	//   cidade.KIEV.tesouros=SEDA,BOI,BOI,FERRO
+	//   cidade.MOSCOU.conquistador=VERDE (só nas conquistadas)
+	//   cidade.MOSCOU.yurt=SIM
+
+	static final int MAX_TESOUROS_NA_CIDADE = 4;
+
+	void salvar(PrintWriter saida, Collection<Jogador> jogadores) {
+		ArquivoPartida.linha(saida, "khan", lugarDoKhan == null ? "" : lugarDoKhan);
+		List<String> pilha = new ArrayList<String>();
+		for (Cidade c : pilhaDeCidades) {
+			pilha.add(c.getNome().name());
+		}
+		ArquivoPartida.linha(saida, "pilhaDeCidades", ArquivoPartida.juntar(pilha));
+
+		List<String> ids = new ArrayList<String>(provincias.keySet());
+		Collections.sort(ids);
+		List<String> tributos = new ArrayList<String>();
+		for (String id : ids) {
+			tributos.add(id + ":" + provincias.get(id).getPecasDeTributo());
+		}
+		ArquivoPartida.linha(saida, "tributos", ArquivoPartida.juntar(tributos));
+
+		for (Jogador j : jogadores) {
+			for (int n = 1; n <= j.getHerdeiro().getNumeroDePeoes(); n++) {
+				Parada p = posicaoDosPeoes.get(new Peao(j.getCor(), n));
+				ArquivoPartida.linha(saida, "peao." + j.getCor().name() + "." + n, p.getId());
+			}
+		}
+
+		ids = new ArrayList<String>(paradas.keySet());
+		Collections.sort(ids);
+		for (String id : ids) {
+			List<Cor> donos = paradas.get(id).getYurts();
+			if (!donos.isEmpty()) {
+				ArquivoPartida.linha(saida, "yurts." + id, ArquivoPartida.juntar(donos));
+			}
+		}
+
+		for (NomeCidade nome : NomeCidade.values()) {
+			Cidade c = cidades.get(nome);
+			String chave = "cidade." + nome.name();
+			ArquivoPartida.linha(saida, chave, c.getEstado().name());
+			ArquivoPartida.linha(saida, chave + ".tesouros", ArquivoPartida.juntar(c.getTesouros()));
+			if (c.getEstado() == Cidade.Estado.CONQUISTADA) {
+				ArquivoPartida.linha(saida, chave + ".conquistador", c.getConquistador().name());
+				ArquivoPartida.linha(saida, chave + ".yurt", c.temYurtDe(c.getConquistador()) ? "SIM" : "NAO");
+			}
+		}
+	}
+
+	/**
+	 * Troca o mapa pelo que está na seção [MAPA]. Primeiro lê e confere tudo;
+	 * só depois mexe no tabuleiro. Assim, se o arquivo estiver errado, o mapa
+	 * continua como estava.
+	 *
+	 * @throws IllegalArgumentException se falta algo ou os dados não fazem sentido
+	 */
+	void carregar(Map<String, String> secao, Collection<Jogador> jogadores) {
+		Map<Cor, Jogador> porCor = new HashMap<Cor, Jogador>();
+		for (Jogador j : jogadores) {
+			porCor.put(j.getCor(), j);
+		}
+
+		// ---- Khan e tributos
+		String khan = ArquivoPartida.valor(secao, "khan");
+		if (!khan.isEmpty() && !getLugaresDoKhan().contains(khan)) {
+			throw new IllegalArgumentException("Lugar do Khan inválido: " + khan);
+		}
+		Map<String, Integer> tributos = ArquivoPartida.pares(secao, "tributos");
+		for (Provincia p : provincias.values()) {
+			Integer n = tributos.get(p.getId());
+			if (n == null || n < 0 || n > Provincia.MAX_PECAS_TRIBUTO) {
+				throw new IllegalArgumentException("Tributos inválidos na província " + p.getId());
+			}
+		}
+
+		// ---- peões (todos têm que estar no mapa, sem passar do limite da parada)
+		Map<Peao, Parada> peoes = new HashMap<Peao, Parada>();
+		Map<Parada, Integer> ocupacao = new HashMap<Parada, Integer>();
+		for (Jogador j : jogadores) {
+			for (int n = 1; n <= j.getHerdeiro().getNumeroDePeoes(); n++) {
+				String id = ArquivoPartida.valor(secao, "peao." + j.getCor().name() + "." + n);
+				Parada p = paradaDoArquivo(id);
+				int jaTem = ocupacao.containsKey(p) ? ocupacao.get(p) : 0;
+				if (jaTem >= p.getTipo().getCapacidadePeoes()) {
+					throw new IllegalArgumentException("Peões demais na parada " + id);
+				}
+				ocupacao.put(p, jaTem + 1);
+				peoes.put(new Peao(j.getCor(), n), p);
+			}
+		}
+
+		// ---- yurts
+		Map<Parada, List<Cor>> yurts = new HashMap<Parada, List<Cor>>();
+		for (String chave : secao.keySet()) {
+			if (!chave.startsWith("yurts.")) {
+				continue;
+			}
+			Parada p = paradaDoArquivo(chave.substring("yurts.".length()));
+			List<Cor> donos = new ArrayList<Cor>();
+			for (String c : ArquivoPartida.lista(secao, chave)) {
+				donos.add(corDoArquivo(c, porCor));
+			}
+			if (p.isKarakorum()) { // em Karakorum só pode o yurt do começo do Tolui
+				if (donos.size() > 1 || (donos.size() == 1 && !donos.get(0).getHerdeiro().comecaComYurtEmKarakorum())) {
+					throw new IllegalArgumentException("Karakorum só pode ter o yurt do Tolui");
+				}
+			} else if (donos.size() > p.getTipo().getCapacidadeYurts()) {
+				throw new IllegalArgumentException("Yurts demais na parada " + p.getId());
+			}
+			yurts.put(p, donos);
+		}
+
+		// ---- cidades
+		Map<NomeCidade, Cidade.Estado> estados = new HashMap<NomeCidade, Cidade.Estado>();
+		Map<NomeCidade, List<TipoTesouro>> tesouros = new HashMap<NomeCidade, List<TipoTesouro>>();
+		Map<NomeCidade, Cor> conquistadores = new HashMap<NomeCidade, Cor>();
+		Set<NomeCidade> comYurt = new HashSet<NomeCidade>();
+		int disponiveis = 0;
+		int naPilha = 0;
+		for (NomeCidade nome : NomeCidade.values()) {
+			String chave = "cidade." + nome.name();
+			Cidade.Estado estado;
+			try {
+				estado = Cidade.Estado.valueOf(ArquivoPartida.valor(secao, chave));
+			} catch (IllegalArgumentException e) {
+				throw new IllegalArgumentException("Estado inválido (ou faltando) da cidade " + nome.name());
+			}
+			List<TipoTesouro> lista = new ArrayList<TipoTesouro>();
+			for (String t : ArquivoPartida.lista(secao, chave + ".tesouros")) {
+				try {
+					lista.add(TipoTesouro.valueOf(t));
+				} catch (IllegalArgumentException e) {
+					throw new IllegalArgumentException("Tesouro inválido em " + nome.name() + ": " + t);
+				}
+			}
+			if (estado == Cidade.Estado.DISPONIVEL) {
+				disponiveis++;
+				if (lista.isEmpty() || lista.size() > MAX_TESOUROS_NA_CIDADE) {
+					throw new IllegalArgumentException(nome.name() + " está disponível com " + lista.size() + " tesouros");
+				}
+			} else if (!lista.isEmpty()) {
+				throw new IllegalArgumentException("Só cidade disponível tem tesouro (" + nome.name() + ")");
+			}
+			if (estado == Cidade.Estado.NA_PILHA) {
+				naPilha++;
+			}
+			if (estado == Cidade.Estado.CONQUISTADA) {
+				conquistadores.put(nome, corDoArquivo(ArquivoPartida.valor(secao, chave + ".conquistador"), porCor));
+				String yurt = ArquivoPartida.valor(secao, chave + ".yurt");
+				if (!yurt.equals("SIM") && !yurt.equals("NAO")) {
+					throw new IllegalArgumentException("Use SIM ou NAO em " + chave + ".yurt");
+				}
+				if (yurt.equals("SIM")) {
+					comYurt.add(nome);
+				}
+			}
+			estados.put(nome, estado);
+			tesouros.put(nome, lista);
+		}
+
+		List<Cidade> pilha = new ArrayList<Cidade>();
+		Set<NomeCidade> vistas = new HashSet<NomeCidade>();
+		for (String id : ArquivoPartida.lista(secao, "pilhaDeCidades")) {
+			NomeCidade nome;
+			try {
+				nome = NomeCidade.valueOf(id);
+			} catch (IllegalArgumentException e) {
+				throw new IllegalArgumentException("Cidade inválida na pilha: " + id);
+			}
+			if (estados.get(nome) != Cidade.Estado.NA_PILHA || !vistas.add(nome)) {
+				throw new IllegalArgumentException("A pilha de cidades não bate com o estado das cidades (" + id + ")");
+			}
+			pilha.add(cidades.get(nome));
+		}
+		if (pilha.size() != naPilha) {
+			throw new IllegalArgumentException("Faltam cidades na pilha");
+		}
+		// enquanto tiver cidade na pilha, sempre são 3 disponíveis
+		if (disponiveis > CIDADES_DISPONIVEIS || (naPilha > 0 && disponiveis != CIDADES_DISPONIVEIS)) {
+			throw new IllegalArgumentException("Tem que haver " + CIDADES_DISPONIVEIS + " cidades disponíveis");
+		}
+
+		// ---- tudo certo: agora sim troca o mapa
+		for (Parada p : paradas.values()) {
+			p.esvaziar();
+		}
+		posicaoDosPeoes.clear();
+		for (Map.Entry<Peao, Parada> e : peoes.entrySet()) {
+			e.getValue().adicionarPeao(e.getKey());
+			posicaoDosPeoes.put(e.getKey(), e.getValue());
+		}
+		for (Map.Entry<Parada, List<Cor>> e : yurts.entrySet()) {
+			for (Cor c : e.getValue()) {
+				if (e.getKey().isKarakorum()) {
+					e.getKey().adicionarYurtDeTolui(c);
+				} else {
+					e.getKey().adicionarYurt(c);
+				}
+			}
+		}
+		for (Provincia p : provincias.values()) {
+			p.definirPecasDeTributo(tributos.get(p.getId()));
+		}
+		for (NomeCidade nome : NomeCidade.values()) {
+			cidades.get(nome).restaurar(estados.get(nome), conquistadores.get(nome), comYurt.contains(nome),
+					tesouros.get(nome));
+		}
+		pilhaDeCidades.clear();
+		pilhaDeCidades.addAll(pilha);
+		lugarDoKhan = khan.isEmpty() ? null : khan;
+		preparado = true;
+	}
+
+	private Parada paradaDoArquivo(String id) {
+		Parada p = paradas.get(id);
+		if (p == null) {
+			throw new IllegalArgumentException("Parada inexistente no arquivo: " + id);
+		}
+		return p;
+	}
+
+	private static Cor corDoArquivo(String nome, Map<Cor, Jogador> jogadores) {
+		Cor cor;
+		try {
+			cor = Cor.valueOf(nome);
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Cor inválida no arquivo: " + nome);
+		}
+		if (!jogadores.containsKey(cor)) {
+			throw new IllegalArgumentException("A cor " + nome + " não está nesta partida");
+		}
+		return cor;
 	}
 }

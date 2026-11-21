@@ -123,4 +123,12 @@ class Provincia {
 	public String toString() {
 		return id + " (" + tipoTributo + (doKhan ? ", Khan" : "") + ": " + pecasDeTributo + ")";
 	}
+
+	// usado ao carregar uma partida salva
+	void definirPecasDeTributo(int quantidade) {
+		if (quantidade < 0 || quantidade > MAX_PECAS_TRIBUTO) {
+			throw new IllegalArgumentException("A província " + id + " não pode ter " + quantidade + " peças");
+		}
+		pecasDeTributo = quantidade;
+	}
 }
