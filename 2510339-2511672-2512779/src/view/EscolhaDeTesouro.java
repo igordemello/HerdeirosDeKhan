@@ -14,7 +14,7 @@ import javax.swing.SwingUtilities;
 
 import model.Jogo;
 
-/**
+/*
  * Janela modal da peça de bônus de 3 tesouros (pág. 17): o jogador clica no
  * tesouro com que quer ficar; os outros são descartados.
  */

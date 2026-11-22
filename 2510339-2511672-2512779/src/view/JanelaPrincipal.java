@@ -9,12 +9,12 @@ import javax.swing.JFrame;
 
 import model.Jogo;
 
-/**
+/*
  * Janela do jogo: o tabuleiro principal no centro e a área lateral (jogador
  * da vez e tabuleiro dele) à direita. O enunciado limita as janelas a
  * 1400 x 1050 pixels.
  *
- * Mostra a partida em andamento ({@link Jogo#getInstancia()}). Os painéis
+ * Mostra a partida em andamento (Jogo.getInstancia()). Os painéis
  * são observadores da partida e se redesenham sozinhos quando ela muda.
  */
 public class JanelaPrincipal extends JFrame {
@@ -40,6 +40,7 @@ public class JanelaPrincipal extends JFrame {
 		// ficava escondido atrás da barra de tarefas
 		Rectangle tela = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
 		setSize(Math.min(LARGURA, tela.width), Math.min(ALTURA, tela.height));
+		setResizable(false); // senão dava pra maximizar e passar de 1400 x 1050
 		setLocationRelativeTo(null);
 	}
 
@@ -67,7 +68,7 @@ public class JanelaPrincipal extends JFrame {
 		painelLateral.mostrarMensagem(texto);
 	}
 
-	/** Escolha dos conselheiros secretos, um jogador de cada vez (antes da 1ª rodada). */
+	// Escolha dos conselheiros secretos, um jogador de cada vez (antes da 1ª rodada).
 	public void escolherConselheirosSecretos() {
 		painelLateral.escolherConselheirosSecretos();
 	}

@@ -125,7 +125,7 @@ final class CoordenadasMapa {
 		return maisPerto(CIDADES, x, y, LADO_TESOURO + ESPACO_TESOURO + 20);
 	}
 
-	/** Posição (0 a 3) do tesouro clicado na cidade, ou -1. */
+	// Posição (0 a 3) do tesouro clicado na cidade, ou -1.
 	static int tesouroEm(String idCidade, double x, double y) {
 		for (int i = 0; i < 4; i++) {
 			Point p = getTesouro(idCidade, i);

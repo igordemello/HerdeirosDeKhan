@@ -1,11 +1,11 @@
 package model;
 
-/**
+/*
  * Herdeiros do Khan. Cada tabuleiro de jogador representa um herdeiro,
  * que possui uma habilidade especial (ver "Habilidades Especiais", pág. 20).
  *
  * Aqui ficam os dados das habilidades; as regras em si são aplicadas pelo
- * {@link Jogo}, pelo {@link TabuleiroJogador} e pelo mapa.
+ * Jogo, pelo TabuleiroJogador e pelo mapa.
  */
 enum Herdeiro {
 	ALTANI("Altani", 2),   // Altani joga com 2 peões (por isso o jogo tem 6 peões)
@@ -30,7 +30,7 @@ enum Herdeiro {
 		return numeroDePeoes;
 	}
 
-	/** Tolui começa o jogo com 1 yurt já colocado em Karakorum. */
+	// Tolui começa o jogo com 1 yurt já colocado em Karakorum.
 	boolean comecaComYurtEmKarakorum() {
 		return this == TOLUI;
 	}

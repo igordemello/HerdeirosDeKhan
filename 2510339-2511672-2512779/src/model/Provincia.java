@@ -6,13 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /*
- * Província: área entre as rotas que acumula peças de tributo.
- * Cada província tem impresso o tipo de tributo que recebe e pode ter no
- * máximo 3 peças.
- *
- * As 4 províncias do Khan têm ainda setas que apontam para 2 províncias
- * adjacentes: quando o Khan é colocado nela, ela e essas 2 recebem 1 peça de
- * tributo cada.
+ * Província: a área entre as rotas onde ficam as peças de tributo. Cada uma
+ * tem um tipo de tributo impresso e cabe no máximo 3 peças. As 4 do Khan têm
+ * setas pra 2 vizinhas; quando o Khan vai pra ela, ela e as 2 ganham 1 peça.
  */
 class Provincia {
 	static final int MAX_PECAS_TRIBUTO = 3;
@@ -24,7 +20,7 @@ class Provincia {
 	private int pecasDeTributo = 0;
 
 	private final Map<String, Parada> paradasAdjacentes = new HashMap<String, Parada>();
-	/** Províncias indicadas pelas setas do Khan (apenas em províncias do Khan). */
+	// as das setas do Khan (só nas províncias do Khan)
 	private final Map<String, Provincia> alvosDoKhan = new HashMap<String, Provincia>();
 
 	Provincia(String id, TipoTributo tipoTributo, boolean doKhan) {
@@ -51,7 +47,7 @@ class Provincia {
 		return doKhan;
 	}
 
-	// ---------------------------------------------------------- adjacências
+	// adjacências
 
 	void adicionarParadaAdjacente(Parada parada) {
 		paradasAdjacentes.put(parada.getId(), parada);
@@ -79,7 +75,7 @@ class Provincia {
 		return Collections.unmodifiableCollection(alvosDoKhan.values());
 	}
 
-	// ------------------------------------------------------ peças de tributo
+	// peças de tributo
 
 	int getPecasDeTributo() {
 		return pecasDeTributo;
@@ -89,11 +85,7 @@ class Provincia {
 		return pecasDeTributo == 0;
 	}
 
-	/**
-	 * Coloca 1 peça de tributo na província.
-	 *
-	 * @return {@code false} se ela já tem o máximo de 3 peças
-	 */
+	// false se já tem 3
 	boolean adicionarTributo() {
 		if (pecasDeTributo >= MAX_PECAS_TRIBUTO) {
 			return false;
@@ -102,12 +94,7 @@ class Provincia {
 		return true;
 	}
 
-	/**
-	 * Retira peças de tributo (quando um jogador as pega). Se não houver
-	 * peças suficientes, nada é alterado.
-	 *
-	 * @return {@code true} se as peças foram retiradas
-	 */
+	// se não tiver peças suficientes devolve false e não tira nada
 	boolean retirarTributo(int quantidade) {
 		if (quantidade <= 0) {
 			throw new IllegalArgumentException("Quantidade deve ser positiva: " + quantidade);

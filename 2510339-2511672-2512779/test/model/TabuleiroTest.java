@@ -12,13 +12,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Testes da classe {@link Tabuleiro}: preparação do mapa para a partida.
+ * Testes da classe Tabuleiro: preparação do mapa para a partida.
  *
  * Os testes usam um mapa pequeno, montado aqui mesmo, para não depender da
  * transcrição do tabuleiro real e para que cada resultado esperado possa
  * ser conferido à mão:
  *
- * <pre>
+ * 
  *   KIEV                 PEQUIM
  *    |                     |
  *   R1 ---- KARAKORUM ---- C1 (dupla) ---- P1
@@ -27,9 +27,9 @@ import org.junit.Test;
  *   PV_KHAN (moeda, província do Khan): adjacente a C1;
  *            setas para PV_ESPADA e PV_YURT
  *   PV_YURT:   adjacente a C1 e a P1
- * </pre>
+ * 
  *
- * Os testes assumem a associação cor -> herdeiro definida em {@link Cor}
+ * Os testes assumem a associação cor -> herdeiro definida em Cor
  * (AZUL = Altani, ROXO = Tolui, VERDE = Jochi).
  */
 public class TabuleiroTest {

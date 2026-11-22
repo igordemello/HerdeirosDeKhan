@@ -54,11 +54,9 @@ public class ControladorJogo {
 		janela.getBotaoSalvar().addActionListener(new TratadorSalvar());
 	}
 
-	/**
-	 * Mostra o tabuleiro e faz a escolha dos conselheiros secretos (pág. 6).
-	 * Numa partida carregada eles já foram escolhidos, então ninguém é
-	 * perguntado de novo.
-	 */
+	// Mostra o tabuleiro e faz a escolha dos conselheiros secretos (pág. 6).
+	// Numa partida carregada eles já foram escolhidos, então ninguém é
+	// perguntado de novo.
 	public void iniciar() {
 		janela.setVisible(true);
 		janela.escolherConselheirosSecretos();
@@ -66,7 +64,7 @@ public class ControladorJogo {
 		janela.mostrarMensagem("Vez de " + jogo.getJogadorDaVez() + "." + (aviso.isEmpty() ? "" : " " + aviso));
 	}
 
-	// ------------------------------------------------------- ações no mapa
+	// ações no mapa
 
 	// A ordem dos testes segue o que está desenhado por cima: Khan (só se
 	// estiver pendente), tesouro, tributo e por último a parada.
@@ -183,7 +181,7 @@ public class ControladorJogo {
 		}
 	}
 
-	// ------------------------------------------------------ vez e fim de jogo
+	// vez e fim de jogo
 
 	void passarVez() {
 		if (jogo.getColunaAtivadaNaVez() == null) {
@@ -207,10 +205,8 @@ public class ControladorJogo {
 		return turnos > 0 ? "Fim de jogo disparado: faltam " + turnos + " turno(s)." : "";
 	}
 
-	/**
-	 * Mostra o resultado e pergunta se jogam de novo (reabre a escolha dos
-	 * personagens) ou fecham o programa.
-	 */
+	// Mostra o resultado e pergunta se jogam de novo (reabre a escolha dos
+	// personagens) ou fecham o programa.
 	private void encerrarPartida() {
 		JanelaFimDeJogo fim = new JanelaFimDeJogo(janela, jogo);
 		fim.setVisible(true); // modal: espera a resposta
@@ -222,7 +218,7 @@ public class ControladorJogo {
 		}
 	}
 
-	/** "Salvar": só no começo do turno; o arquivo é escolhido no JFileChooser. */
+	// "Salvar": só no começo do turno; o arquivo é escolhido no JFileChooser.
 	void salvar() {
 		if (!jogo.podeSalvar()) {
 			janela.mostrarMensagem("Só dá para salvar no começo do turno, antes de qualquer jogada.");
@@ -240,7 +236,7 @@ public class ControladorJogo {
 		}
 	}
 
-	// ------------------------------------------------- tratadores de eventos
+	// tratadores de eventos
 
 	private class TratadorCliqueNoTabuleiro extends MouseAdapter {
 		@Override

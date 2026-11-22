@@ -3,7 +3,7 @@ package view;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
+/*
  * Nomes legíveis, em português, dos identificadores que o Model devolve
  * (tipos de tesouro, tributo, bônus, melhorias e conselheiros).
  */
@@ -73,7 +73,7 @@ final class Textos {
 		return padrao(BONUS.get(tipo), tipo);
 	}
 
-	/** Nome de uma peça de melhoria pelo id (ex.: "CAV-V" → "Dois cavalos (verde)"). */
+	// ex.: "CAV-V" vira "Dois cavalos (verde)"
 	static String melhoria(String id) {
 		int traco = id.indexOf('-');
 		if (traco < 0) {

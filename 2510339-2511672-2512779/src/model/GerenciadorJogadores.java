@@ -6,30 +6,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Cria os jogadores da partida, distribui seus recursos iniciais e controla
- * a ordem de jogo (sentido horário).
- *
- * Preparação (pág. 3): cada jogador escolhe uma cor e recebe o tabuleiro
- * associado, 4 peças de ativação, 12 yurts e moedas: 1 moeda para o 1º e o
- * 2º a jogar, e 2 moedas para os demais.
+/*
+ * Cria os jogadores, dá o que cada um recebe no começo e cuida da ordem de
+ * jogo (sentido horário). Pela pág. 3 cada um recebe o tabuleiro da sua cor,
+ * 4 peças de ativação, 12 yurts e moedas: 1 pro 1º e pro 2º a jogar e 2 pros
+ * outros.
  */
 class GerenciadorJogadores {
 	static final int MIN_JOGADORES = 2;
 	static final int MAX_JOGADORES = 5;
 
 	private final Map<Cor, Jogador> jogadores = new HashMap<Cor, Jogador>();
-	/** Ordem de jogo (sentido horário). O índice 0 é quem começa. */
+	// Ordem de jogo (sentido horário). O índice 0 é quem começa.
 	private final List<Cor> ordem = new ArrayList<Cor>();
 	private int indiceDaVez = 0;
 
-	/**
-	 * Cria os jogadores na ordem em que vão jogar. Pelas regras, começa quem
-	 * tiver o maior número de descendentes; essa decisão é tomada fora do
-	 * Model, que apenas recebe a ordem já definida.
-	 *
-	 * @param coresEmOrdemDeJogo cores escolhidas, na ordem de jogo
-	 */
+	// As cores já vêm na ordem de jogo. Pela regra começa quem tem mais
+	// descendentes, mas isso os jogadores decidem na janela de escolha.
 	GerenciadorJogadores(List<Cor> coresEmOrdemDeJogo) {
 		if (coresEmOrdemDeJogo == null) {
 			throw new IllegalArgumentException("Lista de cores nula");
@@ -52,7 +45,7 @@ class GerenciadorJogadores {
 		distribuirMoedasIniciais();
 	}
 
-	/** 1 moeda para o 1º e o 2º a jogar, 2 moedas para os demais. */
+	// 1 moeda para o 1º e o 2º a jogar, 2 moedas para os demais.
 	private void distribuirMoedasIniciais() {
 		for (int posicao = 0; posicao < ordem.size(); posicao++) {
 			int moedas = (posicao < 2) ? 1 : 2;
@@ -64,12 +57,11 @@ class GerenciadorJogadores {
 		return ordem.size();
 	}
 
-	/** @return o jogador da cor dada, ou {@code null} se ela não está em jogo */
+	// null se a cor não está na partida
 	Jogador getJogador(Cor cor) {
 		return jogadores.get(cor);
 	}
 
-	/** Jogadores na ordem de jogo. */
 	List<Jogador> getJogadoresEmOrdem() {
 		List<Jogador> lista = new ArrayList<Jogador>();
 		for (Cor cor : ordem) {
@@ -86,7 +78,7 @@ class GerenciadorJogadores {
 		return jogadores.get(ordem.get(0));
 	}
 
-	/** Usado ao continuar uma partida salva: a vez é do jogador nessa posição. */
+	// usado ao continuar uma partida salva
 	void setIndiceDaVez(int indice) {
 		if (indice < 0 || indice >= ordem.size()) {
 			throw new IllegalArgumentException("Vez inválida: " + indice);
@@ -94,7 +86,6 @@ class GerenciadorJogadores {
 		indiceDaVez = indice;
 	}
 
-	/** Passa a vez para o próximo jogador no sentido horário. */
 	Jogador passarVez() {
 		indiceDaVez = (indiceDaVez + 1) % ordem.size();
 		return getJogadorDaVez();

@@ -1,16 +1,13 @@
 package model;
 
-/**
+/*
  * Tipos de peça de melhoria (pág. 16), com o que cada uma acrescenta à
  * coluna onde é colocada.
  *
  * A sigla é a usada nos nomes das imagens das peças (ex.: CAV-V = dois
  * cavalos de fundo verde). Os tesouros virtuais existem numa cor só (1 peça
  * por tesouro), por isso têm a cor fixa; os demais existem nas três cores.
- *
- * A compra das melhorias e a melhoria grátis da coluna branca ficam com a
- * parte de melhorias.
- */
+  */
 enum TipoMelhoria {
 	MOEDA_VIRTUAL("MOE", 0, 0, null, TipoTributo.MOEDA, null),
 	ESPADA_VIRTUAL("ESP", 0, 0, null, TipoTributo.ESPADA, null),
@@ -40,18 +37,14 @@ enum TipoMelhoria {
 		this.tesouroVirtual = tesouroVirtual;
 	}
 
-	/**
-	 * Peça de tributo que esta melhoria vale no turno em que a coluna dela é
-	 * ativada (moeda, espada ou yurt virtual, pág. 16), ou {@code null}.
-	 */
+	// Peça de tributo que esta melhoria vale no turno em que a coluna dela é
+	// ativada (moeda, espada ou yurt virtual, pág. 16), ou null.
 	TipoTributo getTributoVirtual() {
 		return tributoVirtual;
 	}
 
-	/**
-	 * Tesouro que esta melhoria vale no turno em que a coluna dela é ativada
-	 * (tesouro virtual, pág. 16), ou {@code null}.
-	 */
+	// Tesouro que esta melhoria vale no turno em que a coluna dela é ativada
+	// (tesouro virtual, pág. 16), ou null.
 	TipoTesouro getTesouroVirtual() {
 		return tesouroVirtual;
 	}
@@ -68,7 +61,7 @@ enum TipoMelhoria {
 		return punhos;
 	}
 
-	/** Cor da única peça deste tipo, ou {@code null} se existe nas três cores. */
+	// Cor da única peça deste tipo, ou null se existe nas três cores.
 	ColunaJogador getCorFixa() {
 		return corFixa;
 	}

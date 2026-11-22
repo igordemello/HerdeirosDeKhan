@@ -1,6 +1,6 @@
 package model;
 
-/**
+/*
  * As 7 peças de bônus (pág. 17), uma de cada tipo. Ficam sobre os 7
  * conselheiros; quem faz a primeira entrega a um conselheiro leva a peça e
  * pode usá-la uma única vez, quando quiser, no seu turno.

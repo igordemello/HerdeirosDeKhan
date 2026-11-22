@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.event.ItemEvent;
@@ -24,7 +25,7 @@ import javax.swing.JPanel;
 
 import model.Jogo;
 
-/**
+/*
  * Segunda janela (Figura 2 do enunciado): escolha dos herdeiros que vão
  * jogar. Cada linha mostra a cartela do herdeiro (com drawImage()) e uma
  * caixa para marcar. A ordem de jogo é a ordem em que as caixas foram
@@ -35,9 +36,8 @@ public class JanelaJogadores extends JFrame {
 
 	private final JButton botaoJogar = new JButton("Jogar");
 	private final JLabel aviso = new JLabel(" ");
-	/** Caixa de cada cor (chave = nome da cor no Model). */
 	private final Map<String, JCheckBox> caixas = new HashMap<String, JCheckBox>();
-	/** Cores marcadas, na ordem em que foram marcadas. */
+	// Cores marcadas, na ordem em que foram marcadas.
 	private final List<String> escolhidas = new ArrayList<String>();
 
 	public JanelaJogadores() {
@@ -74,6 +74,7 @@ public class JanelaJogadores extends JFrame {
 		add(linhas, BorderLayout.CENTER);
 		add(rodape, BorderLayout.SOUTH);
 		setSize(560, 760);
+		setResizable(false);
 		setLocationRelativeTo(null);
 	}
 
@@ -81,7 +82,6 @@ public class JanelaJogadores extends JFrame {
 		return botaoJogar;
 	}
 
-	/** Cores escolhidas, na ordem de jogo. */
 	public List<String> getCoresEscolhidas() {
 		return new ArrayList<String>(escolhidas);
 	}
@@ -90,7 +90,7 @@ public class JanelaJogadores extends JFrame {
 		aviso.setText(texto);
 	}
 
-	/** Texto de cada caixa: posição na ordem de jogo (se marcada), cor e herdeiro. */
+	// Texto de cada caixa: posição na ordem de jogo (se marcada), cor e herdeiro.
 	private void atualizarTextos() {
 		for (String cor : Jogo.getCoresPossiveis()) {
 			int posicao = escolhidas.indexOf(cor);
@@ -99,7 +99,7 @@ public class JanelaJogadores extends JFrame {
 		}
 	}
 
-	/** Marca/desmarca uma cor, guardando a ordem das marcações. */
+	// guarda a ordem em que foram marcadas, que é a ordem de jogo
 	private class TratadorMarcacao implements ItemListener {
 		private final String cor;
 
@@ -119,7 +119,7 @@ public class JanelaJogadores extends JFrame {
 		}
 	}
 
-	/** Cartela (tabuleiro do jogador) do herdeiro, reduzida. */
+	// Cartela (tabuleiro do jogador) do herdeiro, reduzida.
 	private static class Cartela extends JPanel {
 		private static final long serialVersionUID = 1L;
 		private final Image imagem;
@@ -132,7 +132,8 @@ public class JanelaJogadores extends JFrame {
 		@Override
 		protected void paintComponent(Graphics g) {
 			super.paintComponent(g);
-			g.drawImage(imagem, 0, 0, getWidth(), getHeight(), this);
+			Graphics2D g2 = (Graphics2D) g;
+			g2.drawImage(imagem, 0, 0, getWidth(), getHeight(), this);
 		}
 	}
 }

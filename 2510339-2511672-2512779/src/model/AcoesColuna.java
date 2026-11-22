@@ -1,20 +1,18 @@
 package model;
 
-/**
- * Conjuntos de ações impressos na base das colunas dos tabuleiros de jogador.
- *
- * Todos os tabuleiros têm os mesmos três conjuntos nas colunas coloridas,
- * mas cada herdeiro os tem em cores diferentes (a tabela fica em
- * {@link TabuleiroJogador}). A coluna branca é igual em todos.
+/*
+ * O que vem impresso na base de cada coluna. Todo tabuleiro tem os mesmos
+ * três conjuntos nas coloridas, só muda a cor em que cada um aparece (a
+ * tabela está no TabuleiroJogador). A branca é igual em todos.
  */
 enum AcoesColuna {
-	/** 1 cavalo, 2 punhos e o Khan. */
+	// 1 cavalo, 2 punhos e o Khan.
 	CAVALO_DOIS_PUNHOS_KHAN(1, 2, 0, true),
-	/** 2 cavalos e 1 punho. */
+	// 2 cavalos e 1 punho.
 	DOIS_CAVALOS_PUNHO(2, 1, 0, false),
-	/** 1 cavalo, 1 punho e 1 moeda virtual. */
+	// 1 cavalo, 1 punho e 1 moeda virtual.
 	CAVALO_PUNHO_MOEDA(1, 1, 1, false),
-	/** Coluna branca: 2 cavalos, o Khan e recuperar as fichas. */
+	// Coluna branca: 2 cavalos, o Khan e recuperar as fichas.
 	BRANCA(2, 0, 0, true);
 
 	private final int cavalos;
@@ -41,7 +39,7 @@ enum AcoesColuna {
 		return moedasVirtuais;
 	}
 
-	/** Se a coluna tem o ícone do Khan (usar o Khan é obrigatório, pág. 9). */
+	// Se a coluna tem o ícone do Khan (usar o Khan é obrigatório, pág. 9).
 	boolean usaKhan() {
 		return usaKhan;
 	}

@@ -21,7 +21,7 @@ package model;
 
 final class FabricaTabuleiro {
 
-	/** { id, TipoParada (SIMPLES ou DUPLA), Regiao } */
+	// { id, TipoParada (SIMPLES ou DUPLA), Regiao }
 	private static final String[][] PARADAS = {
 			// Rússia
 			{ "R01", "SIMPLES", "RUSSIA" },   // à esquerda de Kiev
@@ -61,7 +61,7 @@ final class FabricaTabuleiro {
 			{ "C11", "SIMPLES", "CHINA" },    // abaixo de Cantão, à direita
 	};
 
-	/** Rotas: { idParadaA, idParadaB }. Cada rota aparece uma única vez. */
+	// Rotas: { idParadaA, idParadaB }. Cada rota aparece uma única vez.
 	private static final String[][] ROTAS = {
 			// Rússia
 			{ "R01", "R02" }, { "R01", "R03" }, { "R02", "R03" },     // anel de Kiev
@@ -94,11 +94,9 @@ final class FabricaTabuleiro {
 			{ "C04", "KARAKORUM" },
 	};
 
-	/**
-	 * { id, TipoTributo, "KHAN" para província do Khan ou "" }. O tipo de
-	 * tributo é o do ícone impresso na província (nas do Khan, o ícone fica ao
-	 * lado da cabeça do Khan).
-	 */
+	// { id, TipoTributo, "KHAN" para província do Khan ou "" }. O tipo de
+	// tributo é o do ícone impresso na província (nas do Khan, o ícone fica ao
+	// lado da cabeça do Khan).
 	private static final String[][] PROVINCIAS = {
 			{ "PV01", "YURT", "KHAN" },   // entre Kiev e Moscou
 			{ "PV02", "ESPADA", "" },     // acima de Moscou
@@ -114,7 +112,7 @@ final class FabricaTabuleiro {
 			{ "PV12", "ESPADA", "" },     // entre Cabul e Pequim
 	};
 
-	/** { idParada, idProvincia }: paradas na borda de cada província. */
+	// { idParada, idProvincia }: paradas na borda de cada província.
 	private static final String[][] PARADA_PROVINCIA = {
 			{ "R02", "PV01" }, { "R03", "PV01" }, { "R05", "PV01" }, { "P01", "PV01" },
 			{ "R02", "PV02" }, { "R04", "PV02" }, { "R05", "PV02" }, { "R06", "PV02" },
@@ -136,7 +134,7 @@ final class FabricaTabuleiro {
 			{ "P09", "PV12" }, { "P10", "PV12" }, { "C06", "PV12" }, { "C09", "PV12" },
 	};
 
-	/** { idParada, NomeCidade }: as 3 paradas do anel em volta de cada cidade. */
+	// { idParada, NomeCidade }: as 3 paradas do anel em volta de cada cidade.
 	private static final String[][] PARADA_CIDADE = {
 			{ "R01", "KIEV" }, { "R02", "KIEV" }, { "R03", "KIEV" },
 			{ "R05", "MOSCOU" }, { "R06", "MOSCOU" }, { "R07", "MOSCOU" },
@@ -149,7 +147,7 @@ final class FabricaTabuleiro {
 			{ "C08", "CANTAO" }, { "C10", "CANTAO" }, { "C11", "CANTAO" },
 	};
 
-	/** Setas do Khan: { idProvinciaDoKhan, idProvinciaAlvo } */
+	// Setas do Khan: { idProvinciaDoKhan, idProvinciaAlvo }
 	private static final String[][] ALVOS_DO_KHAN = {
 			{ "PV01", "PV02" }, { "PV01", "PV03" },
 			{ "PV05", "PV04" }, { "PV05", "PV06" },
@@ -160,7 +158,7 @@ final class FabricaTabuleiro {
 	private FabricaTabuleiro() {
 	}
 
-	/** Cria o tabuleiro da partida, ainda não preparado. */
+	// Cria o tabuleiro da partida, ainda não preparado.
 	static Tabuleiro criarTabuleiroPadrao() {
 		Tabuleiro tabuleiro = new Tabuleiro();
 		for (String[] linha : PARADAS) {

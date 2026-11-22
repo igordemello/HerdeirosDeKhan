@@ -14,7 +14,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-/**
+/*
  * Primeira janela (Figura 1 do enunciado): começar uma nova partida ou
  * continuar uma partida salva. O fundo é a imagem do tabuleiro, desenhada com
  * drawImage(). Quem trata os botões é o Controller.
@@ -39,6 +39,7 @@ public class JanelaInicial extends JFrame {
 		fundo.add(botoes, BorderLayout.SOUTH);
 		setContentPane(fundo);
 		setSize(640, 640);
+		setResizable(false);
 		setLocationRelativeTo(null);
 	}
 
@@ -50,13 +51,13 @@ public class JanelaInicial extends JFrame {
 		return botaoContinuar;
 	}
 
-	/** Aviso em cima dos botões (ex.: o arquivo escolhido não é uma partida válida). */
+	// Aviso em cima dos botões (ex.: o arquivo escolhido não é uma partida válida).
 	public void mostrarAviso(String texto) {
 		fundo.aviso = texto;
 		fundo.repaint();
 	}
 
-	/** Imagem do tabuleiro com o nome do jogo por cima (e o aviso, se houver). */
+	// Imagem do tabuleiro com o nome do jogo por cima (e o aviso, se houver).
 	private static class Fundo extends JPanel {
 		private static final long serialVersionUID = 1L;
 		private final Image imagem = ImagensTabuleiroJogador.carregarArquivo("imagens/", "tabuleiro");

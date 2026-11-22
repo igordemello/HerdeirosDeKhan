@@ -6,27 +6,23 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Posição (x, y), em pixels, do centro de cada parada na imagem do tabuleiro
- * principal (tabuleiro.jpg do EAD, 2905 x 2919 pixels). Os ids são os mesmos
- * do Model (R01..R11, P01..P11, C01..C11 e KARAKORUM).
+/*
+ * Centro de cada parada na imagem do tabuleiro (tabuleiro.jpg do EAD, 2905 x
+ * 2919). Os ids são os mesmos do Model (R01..R11, P01..P11, C01..C11 e
+ * KARAKORUM). Medimos tudo na imagem original; como ela aparece reduzida na
+ * janela, é só multiplicar pela escala (larguraDesenhada / LARGURA_IMAGEM).
  *
- * As coordenadas foram medidas na imagem original. Como a janela tem no
- * máximo 1400 x 1050, a imagem é desenhada reduzida: basta multiplicar as
- * coordenadas pela escala usada no {@code drawImage()}
- * ({@code larguraDesenhada / LARGURA_IMAGEM}).
- *
- * Usada para desenhar os peões e para saber em qual parada o jogador clicou.
+ * Serve pra desenhar os peões e pra saber em qual parada o jogador clicou.
  */
 public final class CoordenadasParadas {
 	public static final int LARGURA_IMAGEM = 2905;
 	public static final int ALTURA_IMAGEM = 2919;
 
-	/** Raio de clique, na imagem original, de uma parada simples. */
+	// raio do clique numa parada simples (na imagem original)
 	private static final int RAIO_SIMPLES = 60;
-	/** Uma parada dupla tem 2 círculos; o ponto guardado fica entre eles. */
+	// Uma parada dupla tem 2 círculos; o ponto guardado fica entre eles.
 	private static final int RAIO_DUPLA = 115;
-	/** Karakorum é o brasão do centro (cerca de 470 x 490 pixels). */
+	// Karakorum é o brasão do centro (cerca de 470 x 490 pixels).
 	private static final int RAIO_KARAKORUM = 220;
 
 	private static final Map<String, Point> COORDENADAS = new HashMap<String, Point>();
@@ -83,7 +79,6 @@ public final class CoordenadasParadas {
 	private CoordenadasParadas() {
 	}
 
-	/** Cópia da tabela id -> ponto, em pixels da imagem original. */
 	public static Map<String, Point> getCoordenadas() {
 		Map<String, Point> copia = new HashMap<String, Point>();
 		for (Map.Entry<String, Point> e : COORDENADAS.entrySet()) {
@@ -92,7 +87,6 @@ public final class CoordenadasParadas {
 		return copia;
 	}
 
-	/** Centro da parada na imagem desenhada com a escala dada (ou {@code null}). */
 	public static Point getPonto(String idParada, double escala) {
 		Point p = COORDENADAS.get(idParada);
 		if (p == null) {
@@ -101,13 +95,8 @@ public final class CoordenadasParadas {
 		return new Point((int) Math.round(p.x * escala), (int) Math.round(p.y * escala));
 	}
 
-	/**
-	 * Parada clicada. As coordenadas do clique devem ser relativas ao canto
-	 * superior esquerdo da imagem desenhada.
-	 *
-	 * @param escala larguraDesenhada / LARGURA_IMAGEM
-	 * @return o id da parada, ou {@code null} se o clique não foi numa parada
-	 */
+	// Id da parada clicada ou null. O clique tem que ser relativo ao canto de
+	// cima da imagem desenhada.
 	public static String paradaEm(int x, int y, double escala) {
 		double xImagem = x / escala;
 		double yImagem = y / escala;

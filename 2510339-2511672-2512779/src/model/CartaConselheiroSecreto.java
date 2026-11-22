@@ -1,6 +1,6 @@
 package model;
 
-/**
+/*
  * Carta de conselheiro secreto. Cada jogador recebe 2 no início da partida
  * e escolhe 1 para manter; no final ela dá de 0 a 3 votos.
  */
@@ -30,7 +30,7 @@ class CartaConselheiroSecreto extends Carta {
 				+ tipo.getLimiar(3) + " -> 1/2/3 votos)";
 	}
 
-	/** Votos de final de jogo concedidos para a quantidade atingida. */
+	// Votos de final de jogo concedidos para a quantidade atingida.
 	int calcularVotos(int quantidadeAtingida) {
 		return tipo.calcularVotos(quantidadeAtingida);
 	}

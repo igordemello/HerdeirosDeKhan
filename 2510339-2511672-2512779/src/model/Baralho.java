@@ -6,14 +6,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Baralho genérico de cartas: um monte (cartas viradas para baixo, o topo é o
- * fim da lista) e uma pilha de descarte.
- *
- * Aqui é usada uma lista em vez de HashMap porque a ordem das cartas importa
- * (embaralhar e comprar do topo).
- *
- * @param <T> tipo de carta guardado no baralho
+/*
+ * Baralho genérico: o monte (virado pra baixo, o topo é o fim da lista) e o
+ * descarte. Aqui é lista e não HashMap porque a ordem importa (embaralhar e
+ * comprar do topo).
  */
 class Baralho<T extends Carta> {
 	private final List<T> monte = new ArrayList<T>();
@@ -28,16 +24,11 @@ class Baralho<T extends Carta> {
 		this.aleatorio = aleatorio;
 	}
 
-	/** Embaralha as cartas do monte. */
 	void embaralhar() {
 		Collections.shuffle(monte, aleatorio);
 	}
 
-	/**
-	 * Compra a carta do topo do monte.
-	 *
-	 * @return a carta comprada, ou {@code null} se o monte estiver vazio
-	 */
+	// null se o monte acabou
 	T comprar() {
 		if (monte.isEmpty()) {
 			return null;
@@ -45,11 +36,7 @@ class Baralho<T extends Carta> {
 		return monte.remove(monte.size() - 1);
 	}
 
-	/**
-	 * Compra {@code quantidade} cartas do topo do monte.
-	 *
-	 * @throws IllegalStateException se não houver cartas suficientes
-	 */
+	// se não tiver cartas suficientes lança IllegalStateException
 	List<T> comprar(int quantidade) {
 		if (quantidade < 0) {
 			throw new IllegalArgumentException("Quantidade negativa: " + quantidade);
@@ -65,7 +52,6 @@ class Baralho<T extends Carta> {
 		return compradas;
 	}
 
-	/** Coloca uma carta na pilha de descarte. */
 	void descartar(T carta) {
 		if (carta == null) {
 			throw new IllegalArgumentException("Carta nula");
@@ -81,15 +67,11 @@ class Baralho<T extends Carta> {
 		return monte.isEmpty();
 	}
 
-	/** Cópia somente-leitura da pilha de descarte. */
 	List<T> getDescarte() {
 		return Collections.unmodifiableList(descarte);
 	}
 
-	/**
-	 * Troca o conteúdo do monte e do descarte (ao carregar uma partida).
-	 * O monte é dado do fundo para o topo.
-	 */
+	// usado ao carregar; o monte vem do fundo pro topo
 	void restaurar(List<T> novoMonte, List<T> novoDescarte) {
 		monte.clear();
 		monte.addAll(novoMonte);
@@ -97,7 +79,7 @@ class Baralho<T extends Carta> {
 		descarte.addAll(novoDescarte);
 	}
 
-	/** Cópia somente-leitura do monte (o último elemento é o topo). */
+	// o último é o topo
 	List<T> getMonte() {
 		return Collections.unmodifiableList(monte);
 	}

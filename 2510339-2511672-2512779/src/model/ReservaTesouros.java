@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
+/*
  * Pilha de peças de tesouro viradas para baixo, ao lado do tabuleiro
  * (pág. 4). Começa com as 40 peças embaralhadas.
  *
@@ -29,7 +29,7 @@ class ReservaTesouros {
 		Collections.shuffle(pilha, aleatorio);
 	}
 
-	/** Tira até {@code quantidade} tesouros do topo (menos, se a pilha acabar). */
+	// Tira até quantidade tesouros do topo (menos, se a pilha acabar).
 	List<TipoTesouro> comprar(int quantidade) {
 		if (quantidade < 0) {
 			throw new IllegalArgumentException("Quantidade negativa");
@@ -41,7 +41,7 @@ class ReservaTesouros {
 		return compradas;
 	}
 
-	/** Devolve tesouros ao fundo da pilha. */
+	// Devolve tesouros ao fundo da pilha.
 	void devolver(List<TipoTesouro> tesouros) {
 		pilha.addAll(0, tesouros);
 	}
@@ -50,9 +50,9 @@ class ReservaTesouros {
 		return pilha.size();
 	}
 
-	// --------------------------------------------- salvar e carregar (4ª it.)
+	// salvar e carregar (4ª it.)
 
-	/** A pilha, do fundo para o topo (a ordem importa: o próximo bônus tira do topo). */
+	// do fundo pro topo (a ordem importa, o próximo a sair é o do topo)
 	void salvar(PrintWriter saida) {
 		ArquivoPartida.linha(saida, "pilha", ArquivoPartida.juntar(pilha));
 	}

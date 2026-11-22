@@ -28,9 +28,9 @@ import javax.swing.JPanel;
 
 import model.Jogo;
 
-/**
+/*
  * Parte de baixo da área lateral: votos, peças de tributo, tesouros e peças
- * de bônus do jogador da vez, desenhados com {@code drawImage()}, e os
+ * de bônus do jogador da vez, desenhados com drawImage(), e os
  * botões que abrem as janelas de melhorias, de entregas e de cartas.
  * Clicar numa peça de bônus usa a peça.
  */
@@ -74,10 +74,10 @@ class PainelRecursos extends JPanel {
 		desenho.repaint();
 	}
 
-	/** Área desenhada: votos, tributos, tesouros, bônus e avisos. */
+	// Área desenhada: votos, tributos, tesouros, bônus e avisos.
 	private class Desenho extends JComponent {
 		private static final long serialVersionUID = 1L;
-		/** Onde cada peça de bônus foi desenhada (para tratar cliques). */
+		// Onde cada peça de bônus foi desenhada (para tratar cliques).
 		private final List<Rectangle> areasBonus = new ArrayList<Rectangle>();
 		private final List<String> tiposBonus = new ArrayList<String>();
 
@@ -201,7 +201,7 @@ class PainelRecursos extends JPanel {
 			return y + fm.getHeight() + 2;
 		}
 
-		/** Desenha uma peça com a quantidade ao lado; devolve o x final. */
+		// Desenha uma peça com a quantidade ao lado; devolve o x final.
 		private int peca(Graphics2D g2, Image img, String nome, String texto, int x, int y, int lado) {
 			if (img != null) {
 				g2.drawImage(img, x, y, lado, lado, this);
@@ -226,7 +226,7 @@ class PainelRecursos extends JPanel {
 			return null;
 		}
 
-		/** Clique numa peça de bônus: pergunta e usa. */
+		// Clique numa peça de bônus: pergunta e usa.
 		private class TratadorCliqueBonus extends MouseAdapter {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -245,7 +245,7 @@ class PainelRecursos extends JPanel {
 			}
 		}
 
-		/** Mãozinha sobre as peças de bônus. */
+		// Mãozinha sobre as peças de bônus.
 		private class TratadorCursor extends MouseMotionAdapter {
 			@Override
 			public void mouseMoved(MouseEvent e) {
@@ -256,7 +256,7 @@ class PainelRecursos extends JPanel {
 		}
 	}
 
-	/** Botões que abrem as janelas. */
+	// Botões que abrem as janelas.
 	private class TratadorAbrir implements ActionListener {
 		static final int MELHORIAS = 0;
 		static final int ENTREGAS = 1;

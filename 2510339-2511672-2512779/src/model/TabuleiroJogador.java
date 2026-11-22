@@ -9,33 +9,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
+/*
  * Tabuleiro de um jogador (págs. 6, 9 e 11-12): as 4 colunas, as fichas de
- * ativação colocadas nelas e as melhorias de cada coluna.
+ * ativação e as melhorias de cada coluna.
  *
- * Regras:
- * <ul>
- * <li>no seu turno o jogador coloca uma ficha numa coluna livre e faz as ações
- * dela; a ficha fica na coluna até ser recuperada;</li>
- * <li>ao ativar a coluna branca, o jogador recupera todas as fichas,
- * inclusive a que acabou de usar;</li>
- * <li>o número de movimentos do turno é o número de cavalos da coluna
- * ativada (base + melhorias);</li>
- * <li>as melhorias são colocadas de baixo para cima, no máximo 4 por coluna;
- * numa coluna colorida a peça tem de ser da cor dela, na branca vale
- * qualquer cor (pág. 11-12). O Jochi não precisa seguir a cor das peças
- * (habilidade do herdeiro).</li>
- * </ul>
+ * No turno o jogador põe uma ficha numa coluna livre e faz as ações dela. A
+ * ficha só sai quando ele ativa a coluna branca, que devolve todas (até a
+ * que acabou de usar). Os movimentos do turno são os cavalos da coluna
+ * (base + melhorias). As melhorias entram de baixo pra cima, no máximo 4 por
+ * coluna; nas coloridas a peça tem que ser da mesma cor, na branca vale
+ * qualquer uma. O Jochi pode ignorar a cor.
  */
 class TabuleiroJogador {
 	static final int FICHAS_ATIVACAO = 4;
 	static final int MAX_MELHORIAS_POR_COLUNA = 4;
 
-	/**
-	 * Ações da base de cada coluna, por herdeiro, na ordem de
-	 * {@link ColunaJogador} (vermelha, verde, amarela, branca). Transcrito das
-	 * imagens dos tabuleiros disponibilizadas no EAD.
-	 */
+	// Ações impressas na base das colunas de cada herdeiro, na ordem vermelha,
+	// verde, amarela, branca. Copiamos olhando as cartelas do EAD.
 	private static final Map<Herdeiro, AcoesColuna[]> ACOES_POR_HERDEIRO = new HashMap<Herdeiro, AcoesColuna[]>();
 	static {
 		ACOES_POR_HERDEIRO.put(Herdeiro.ALTANI, new AcoesColuna[] { AcoesColuna.CAVALO_DOIS_PUNHOS_KHAN,
@@ -51,14 +41,10 @@ class TabuleiroJogador {
 	}
 
 	private final Herdeiro herdeiro;
-	/** Colunas com uma ficha de ativação colocada. */
 	private final Map<ColunaJogador, Boolean> ocupada = new HashMap<ColunaJogador, Boolean>();
-	/** Melhorias de cada coluna, da mais baixa para a mais alta. */
+	// Melhorias de cada coluna, da mais baixa para a mais alta.
 	private final Map<ColunaJogador, List<PecaMelhoria>> melhorias = new HashMap<ColunaJogador, List<PecaMelhoria>>();
-	/**
-	 * Peças colocadas neste turno: os benefícios delas só valem a partir do
-	 * próximo turno (pág. 12).
-	 */
+	// peças colocadas neste turno, que só valem a partir do próximo (pág. 12)
 	private final Set<PecaMelhoria> novasNoTurno = new HashSet<PecaMelhoria>();
 
 	TabuleiroJogador(Herdeiro herdeiro) {
@@ -76,28 +62,21 @@ class TabuleiroJogador {
 		return herdeiro;
 	}
 
-	/** Ações impressas na base da coluna, neste tabuleiro. */
 	AcoesColuna getAcoesIniciais(ColunaJogador coluna) {
 		return ACOES_POR_HERDEIRO.get(herdeiro)[verificar(coluna).ordinal()];
 	}
 
-	// ---------------------------------------------------- fichas de ativação
+	// fichas de ativação
 
 	boolean colunaOcupada(ColunaJogador coluna) {
 		return ocupada.get(verificar(coluna));
 	}
 
-	/** A coluna pode ser ativada se ainda não tem ficha. */
 	boolean podeAtivar(ColunaJogador coluna) {
 		return !colunaOcupada(coluna);
 	}
 
-	/**
-	 * Coloca uma ficha de ativação na coluna. Se for a coluna branca, todas
-	 * as fichas voltam para o jogador.
-	 *
-	 * @return {@code false} se a coluna já tem ficha (nada é alterado)
-	 */
+	// Se for a branca, em vez de ocupar ela devolve todas as fichas.
 	boolean ativar(ColunaJogador coluna) {
 		if (!podeAtivar(coluna)) {
 			return false;
@@ -110,7 +89,6 @@ class TabuleiroJogador {
 		return true;
 	}
 
-	/** Recupera todas as fichas de ativação. */
 	void recuperarFichas() {
 		for (ColunaJogador c : ColunaJogador.values()) {
 			ocupada.put(c, false);
@@ -127,12 +105,9 @@ class TabuleiroJogador {
 		return FICHAS_ATIVACAO - usadas;
 	}
 
-	// ------------------------------------------------------- ações da coluna
+	// ações da coluna
 
-	/**
-	 * Cavalos da coluna = movimentos do turno em que ela for ativada. As
-	 * melhorias colocadas neste turno ainda não contam.
-	 */
+	// cavalos = movimentos do turno (as melhorias novas ainda não contam)
 	int getCavalos(ColunaJogador coluna) {
 		int total = getAcoesIniciais(coluna).getCavalos();
 		for (PecaMelhoria m : melhoriasUsaveis(coluna)) {
@@ -141,7 +116,7 @@ class TabuleiroJogador {
 		return total;
 	}
 
-	/** Punhos da coluna = quantas peças de tributo o jogador pode pegar. */
+	// punhos = quantos tributos ele pode pegar
 	int getPunhos(ColunaJogador coluna) {
 		int total = getAcoesIniciais(coluna).getPunhos();
 		for (PecaMelhoria m : melhoriasUsaveis(coluna)) {
@@ -150,11 +125,8 @@ class TabuleiroJogador {
 		return total;
 	}
 
-	/**
-	 * Peças de tributo virtuais que a coluna dá no turno em que é ativada: a
-	 * moeda virtual impressa na base (só a moeda existe na base) mais as
-	 * melhorias de moeda, espada ou yurt virtual (pág. 16).
-	 */
+	// Tributos virtuais que a coluna dá quando é ativada: a moeda impressa na
+	// base (só existe moeda na base) + as melhorias virtuais (pág. 16).
 	int getTributosVirtuais(ColunaJogador coluna, TipoTributo tipo) {
 		int total = tipo == TipoTributo.MOEDA ? getAcoesIniciais(coluna).getMoedasVirtuais() : 0;
 		for (PecaMelhoria m : melhoriasUsaveis(coluna)) {
@@ -165,7 +137,6 @@ class TabuleiroJogador {
 		return total;
 	}
 
-	/** Tesouros virtuais que a coluna dá no turno em que é ativada. */
 	List<TipoTesouro> getTesourosVirtuais(ColunaJogador coluna) {
 		List<TipoTesouro> lista = new ArrayList<TipoTesouro>();
 		for (PecaMelhoria m : melhoriasUsaveis(coluna)) {
@@ -186,19 +157,14 @@ class TabuleiroJogador {
 		return lista;
 	}
 
-	/** Se a coluna tem o ícone do Khan neste tabuleiro. */
 	boolean usaKhan(ColunaJogador coluna) {
 		return getAcoesIniciais(coluna).usaKhan();
 	}
 
-	// ------------------------------------------------------------- melhorias
+	// melhorias
 
-	/**
-	 * Coloca uma peça de melhoria no espaço livre mais baixo da coluna.
-	 *
-	 * @return {@code false} se a coluna já está cheia ou se a cor da peça não
-	 *         combina com a coluna (nada é alterado)
-	 */
+	// Põe a peça no espaço livre mais baixo. Devolve false se a coluna está
+	// cheia ou se a cor não bate.
 	boolean adicionarMelhoria(ColunaJogador coluna, PecaMelhoria peca) {
 		if (peca == null) {
 			throw new IllegalArgumentException("Melhoria nula");
@@ -215,20 +181,17 @@ class TabuleiroJogador {
 		return true;
 	}
 
-	/** Fim do turno: as melhorias colocadas nele passam a valer. */
+	// as melhorias compradas no turno passam a valer
 	void encerrarTurno() {
 		novasNoTurno.clear();
 	}
 
-	/** Se a coluna ainda tem espaço para uma melhoria. */
 	boolean temEspaco(ColunaJogador coluna) {
 		return melhorias.get(verificar(coluna)).size() < MAX_MELHORIAS_POR_COLUNA;
 	}
 
-	/**
-	 * Linhas completas: linhas em que as 3 colunas coloridas têm melhoria.
-	 * Cada linha completa dá uma melhoria grátis na coluna branca (pág. 12).
-	 */
+	// Linha completa = as 3 coloridas têm melhoria naquela altura. Cada uma dá
+	// uma melhoria grátis na coluna branca (pág. 12).
 	int getLinhasCompletas() {
 		int menor = MAX_MELHORIAS_POR_COLUNA;
 		for (ColunaJogador c : ColunaJogador.values()) {
@@ -239,7 +202,6 @@ class TabuleiroJogador {
 		return menor;
 	}
 
-	/** Total de melhorias no tabuleiro, em todas as colunas. */
 	int getTotalMelhorias() {
 		int total = 0;
 		for (List<PecaMelhoria> lista : melhorias.values()) {
@@ -248,7 +210,6 @@ class TabuleiroJogador {
 		return total;
 	}
 
-	/** Todas as melhorias do tabuleiro, em todas as colunas. */
 	List<PecaMelhoria> getTodasAsMelhorias() {
 		List<PecaMelhoria> todas = new ArrayList<PecaMelhoria>();
 		for (ColunaJogador c : ColunaJogador.values()) {
@@ -257,10 +218,8 @@ class TabuleiroJogador {
 		return todas;
 	}
 
-	/**
-	 * Atalho para colunas coloridas: a peça tem a cor da coluna (ou a cor
-	 * fixa, no caso dos tesouros virtuais).
-	 */
+	// atalho pros testes: cria a peça com a cor da coluna (ou a cor fixa dos
+	// tesouros virtuais)
 	boolean adicionarMelhoria(ColunaJogador coluna, TipoMelhoria tipo) {
 		ColunaJogador cor = tipo.getCorFixa() != null ? tipo.getCorFixa() : verificar(coluna);
 		if (!cor.ehColorida()) {
@@ -273,13 +232,10 @@ class TabuleiroJogador {
 		return Collections.unmodifiableList(melhorias.get(verificar(coluna)));
 	}
 
-	// --------------------------------------------- salvar e carregar (4ª it.)
+	// salvar e carregar (4ª it.)
 
-	/**
-	 * Escreve, na seção do jogador, as colunas com ficha de ativação e as
-	 * melhorias de cada coluna, de baixo para cima. As peças colocadas no
-	 * turno já valem quando a partida é salva (só se salva entre turnos).
-	 */
+	// Escreve as colunas com ficha e as melhorias de cada coluna, de baixo pra
+	// cima. Como só se salva entre turnos, não precisa guardar as peças novas.
 	void salvar(PrintWriter saida) {
 		List<String> comFicha = new ArrayList<String>();
 		for (ColunaJogador c : ColunaJogador.values()) {
@@ -293,7 +249,6 @@ class TabuleiroJogador {
 		}
 	}
 
-	/** Restaura fichas e melhorias a partir da seção do jogador. */
 	void carregar(Map<String, String> secao) {
 		for (ColunaJogador c : ColunaJogador.values()) {
 			ocupada.put(c, false);

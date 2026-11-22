@@ -8,7 +8,7 @@ import java.util.Random;
 import org.junit.Before;
 import org.junit.Test;
 
-/** Testes do tabuleiro do jogador e da ativação de colunas pela API {@link Jogo}. */
+/** Testes do tabuleiro do jogador e da ativação de colunas pela API Jogo. */
 public class TabuleiroJogadorTest {
 
 	private TabuleiroJogador tab;

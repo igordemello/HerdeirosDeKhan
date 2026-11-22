@@ -5,21 +5,18 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Um dos 7 conselheiros do mapa (págs. 12-13): 6 nas paradas duplas e 1 em
- * Karakorum. Quem faz uma parada no conselheiro pode entregar a ele o
- * conjunto de tesouros que ele pede e ganha votos por entrega. A primeira
- * entrega também dá a peça de bônus que está sobre o conselheiro.
- *
- * Há dois tipos de pedido: tesouros específicos (ex.: 2 sedas; em
- * Karakorum, 1 ferro, 1 pele e 1 boi) ou uma quantidade de tesouros de
- * qualquer tipo (3, no conselheiro de baixo).
+/*
+ * Conselheiro do mapa (págs. 12-13): 6 nas paradas duplas e 1 em Karakorum.
+ * Quem para nele pode entregar os tesouros que ele pede e ganha votos; a
+ * primeira entrega leva também a peça de bônus. O pedido ou é de tesouros
+ * certos (2 sedas, ou 1 ferro + 1 pele + 1 boi em Karakorum) ou é de N
+ * tesouros quaisquer (3, no conselheiro de baixo).
  */
 class Conselheiro {
 	private final String idParada;
-	/** Tesouros específicos pedidos; vazio quando o pedido é de qualquer tipo. */
+	// vazio quando aceita qualquer tipo
 	private final Map<TipoTesouro, Integer> pedido;
-	/** Quantos tesouros de qualquer tipo são pedidos (0 se o pedido é específico). */
+	// 0 quando o pedido é de tesouros certos
 	private final int quantidadeQualquer;
 	private final int votosPorEntrega;
 	private TipoBonus bonus;
@@ -33,7 +30,6 @@ class Conselheiro {
 		this.votosPorEntrega = votosPorEntrega;
 	}
 
-	/** Conselheiro que pede tesouros específicos (podem se repetir na lista). */
 	static Conselheiro comPedido(String idParada, int votosPorEntrega, List<TipoTesouro> tesouros) {
 		if (tesouros == null || tesouros.isEmpty()) {
 			throw new IllegalArgumentException("Pedido vazio");
@@ -46,7 +42,6 @@ class Conselheiro {
 		return new Conselheiro(idParada, pedido, 0, votosPorEntrega);
 	}
 
-	/** Conselheiro que aceita uma quantidade de tesouros de qualquer tipo. */
 	static Conselheiro deQualquerTipo(String idParada, int votosPorEntrega, int quantidade) {
 		if (quantidade <= 0) {
 			throw new IllegalArgumentException("Quantidade inválida");
@@ -67,12 +62,10 @@ class Conselheiro {
 		return quantidadeQualquer > 0;
 	}
 
-	/** Pedido específico (vazio se aceita qualquer tipo). */
 	Map<TipoTesouro, Integer> getPedido() {
 		return Collections.unmodifiableMap(pedido);
 	}
 
-	/** Quantidade total de tesouros de uma entrega. */
 	int getTamanhoDaEntrega() {
 		if (aceitaQualquerTipo()) {
 			return quantidadeQualquer;
@@ -84,10 +77,7 @@ class Conselheiro {
 		return total;
 	}
 
-	/**
-	 * Se a lista de tesouros é exatamente uma entrega válida para este
-	 * conselheiro.
-	 */
+	// a lista tem que ser exatamente o pedido
 	boolean aceita(List<TipoTesouro> tesouros) {
 		if (tesouros == null || tesouros.size() != getTamanhoDaEntrega()) {
 			return false;
@@ -111,12 +101,7 @@ class Conselheiro {
 		this.bonus = bonus;
 	}
 
-	/**
-	 * Registra uma entrega.
-	 *
-	 * @return a peça de bônus, se esta foi a primeira entrega e ainda havia
-	 *         peça; senão {@code null}
-	 */
+	// devolve a peça de bônus na primeira entrega, e null nas outras
 	TipoBonus registrarEntrega() {
 		entregas++;
 		TipoBonus ganho = bonus;
@@ -128,7 +113,7 @@ class Conselheiro {
 		return entregas;
 	}
 
-	/** Restaura a peça de bônus (ou {@code null}) e as entregas, ao carregar uma partida. */
+	// usado ao carregar uma partida
 	void restaurar(TipoBonus bonus, int entregas) {
 		if (entregas < 0) {
 			throw new IllegalArgumentException("Número de entregas negativo");

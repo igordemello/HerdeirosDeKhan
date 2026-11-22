@@ -66,7 +66,7 @@ public class PainelTabuleiro extends JPanel implements ObservadorIF {
 		repaint();
 	}
 
-	// ---------------------------------------- o que tem no ponto clicado
+	// o que tem no ponto clicado
 	// (todos devolvem null se não tiver nada ali)
 
 	public String paradaEm(int x, int y) {
@@ -85,14 +85,14 @@ public class PainelTabuleiro extends JPanel implements ObservadorIF {
 		return CoordenadasMapa.cidadeEm(x / escala, y / escala);
 	}
 
-	/** Tipo do tesouro (ex.: "SEDA") clicado em cima da cidade. */
+	// Tipo do tesouro (ex.: "SEDA") clicado em cima da cidade.
 	public String tesouroEm(String idCidade, int x, int y) {
 		int i = CoordenadasMapa.tesouroEm(idCidade, x / escala, y / escala);
 		List<String> tesouros = jogo.getTesourosDaCidade(idCidade);
 		return i >= 0 && i < tesouros.size() ? tesouros.get(i) : null;
 	}
 
-	// ------------------------------------------------------------ desenho
+	// desenho
 
 	@Override
 	protected void paintComponent(Graphics g) {
@@ -316,7 +316,7 @@ public class PainelTabuleiro extends JPanel implements ObservadorIF {
 		g2.draw(new Ellipse2D.Double(x - s(6), y - s(6), lado + s(12), lado + s(12)));
 	}
 
-	/** Desenha os peões; os que estão na mesma parada ficam lado a lado. */
+	// Desenha os peões; os que estão na mesma parada ficam lado a lado.
 	private void desenharPeoes(Graphics2D g2) {
 		Map<String, List<String>> coresPorParada = new HashMap<String, List<String>>();
 		for (String cor : jogo.getCores()) {
@@ -340,7 +340,7 @@ public class PainelTabuleiro extends JPanel implements ObservadorIF {
 		}
 	}
 
-	/** O peão é a imagem da ficha da cor do jogador, recortada em círculo. */
+	// O peão é a imagem da ficha da cor do jogador, recortada em círculo.
 	private void desenharPeao(Graphics2D g2, String cor, int x, int y, int d) {
 		Ellipse2D circulo = new Ellipse2D.Double(x, y, d, d);
 		Shape recorteAnterior = g2.getClip();
@@ -352,7 +352,7 @@ public class PainelTabuleiro extends JPanel implements ObservadorIF {
 		g2.draw(circulo);
 	}
 
-	// -------------------------------------------------------------- apoio
+	// apoio
 
 	// medida da imagem original -> pixels do painel
 	private int s(double medidaNaImagem) {

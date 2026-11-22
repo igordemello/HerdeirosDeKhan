@@ -18,32 +18,23 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-/**
- * Imagens usadas na área lateral, guardadas em HashMaps para que a View as
- * recupere em tempo constante:
- * <ul>
- * <li>tabuleiros de jogador, um por herdeiro, em {@code imagens/tabuleiros/}
- * (ex.: {@code tolui.jpg});</li>
- * <li>fichas de ativação, uma por cor de jogador, em {@code imagens/fichas/}
- * (ex.: {@code azul.jpg});</li>
- * <li>peças de tributo, tesouros e peças de bônus, pelo nome do tipo no
- * Model, em {@code imagens/tributos/}, {@code imagens/tesouros/} e
- * {@code imagens/bonus/} (ex.: {@code SEDA.jpg});</li>
- * <li>peças de melhoria, pelo id da peça no Model, em
- * {@code imagens/melhorias/} (ex.: {@code CAV-V.jpg}).</li>
- * </ul>
- * As imagens são as disponibilizadas no EAD. Se o tabuleiro de um herdeiro
- * não for encontrado, a classe monta uma imagem provisória com Java2D; se uma
- * ficha ou melhoria não for encontrada, devolve {@code null} e o painel
- * desenha uma forma simples no lugar. A View exibe tudo com
- * {@code drawImage()}.
+/*
+ * Carrega as imagens (as do EAD) e guarda em HashMaps, pra View pegar em
+ * tempo constante pelo nome que vem do Model:
+ *   imagens/tabuleiros/tolui.jpg   tabuleiro de cada herdeiro
+ *   imagens/fichas/azul.jpg        ficha de ativação de cada cor
+ *   imagens/tributos/, tesouros/, bonus/   pelo nome do tipo (ex.: SEDA.jpg)
+ *   imagens/melhorias/CAV-V.jpg    pelo id da peça
  *
- * As constantes de geometria dizem onde ficam as colunas dentro da imagem,
- * em frações da largura e da altura, e valem para os dois casos. Se as
- * imagens do EAD tiverem outro enquadramento, basta ajustá-las.
+ * Se faltar o tabuleiro de um herdeiro, desenhamos um quebra-galho com
+ * Java2D. Se faltar outra imagem, devolve null e quem desenha põe uma forma
+ * simples no lugar. Tudo aparece na tela com drawImage().
+ *
+ * As constantes de geometria são a posição das colunas dentro da cartela,
+ * em fração da largura/altura.
  */
 final class ImagensTabuleiroJogador {
-	/** Pastas das imagens, relativas à pasta do projeto no Eclipse. */
+	// pastas relativas à pasta do projeto no Eclipse
 	static final String PASTA = "imagens/tabuleiros/";
 	static final String PASTA_FICHAS = "imagens/fichas/";
 	static final String PASTA_MELHORIAS = "imagens/melhorias/";
@@ -53,22 +44,21 @@ final class ImagensTabuleiroJogador {
 	static final String PASTA_CARTAS = "imagens/cartas/";
 	private static final String[] EXTENSOES = { ".png", ".jpg", ".jpeg", ".gif" };
 
-	/** Proporção largura/altura do tabuleiro do jogador. */
+	// Proporção largura/altura do tabuleiro do jogador.
 	static final double PROPORCAO = 1600.0 / 873.0;
 
-	/** Início (x) de cada coluna, em fração da largura da imagem. */
+	// Início (x) de cada coluna, em fração da largura da imagem.
 	static final double[] X_COLUNA = { 0.2625, 0.439, 0.616, 0.811 };
-	/** Largura de uma coluna, em fração da largura da imagem. */
+	// Largura de uma coluna, em fração da largura da imagem.
 	static final double LARGURA_COLUNA = 0.150;
-	/** Topo (y) dos espaços de melhoria, de baixo (índice 0) para cima. */
+	// Topo (y) dos espaços de melhoria, de baixo (índice 0) para cima.
 	static final double[] Y_ESPACO = { 0.590, 0.422, 0.258, 0.094 };
-	/** Topo (y) da linha de ações iniciais (base das colunas). */
+	// Topo (y) da linha de ações iniciais (base das colunas).
 	static final double Y_BASE = 0.759;
-	/** Altura de uma linha, em fração da altura da imagem. */
+	// Altura de uma linha, em fração da altura da imagem.
 	static final double ALTURA_LINHA = 0.147;
 
-	/** Cor de fundo de cada coluna na imagem provisória. */
-	/** Cor de fundo de cada coluna na imagem provisória (vermelha, verde, amarela, branca). */
+	// cores das colunas no tabuleiro quebra-galho (vermelha, verde, amarela, branca)
 	private static final Color[] FUNDO_COLUNA = { new Color(232, 112, 92), new Color(150, 196, 96),
 			new Color(240, 206, 70), new Color(245, 245, 245) };
 
@@ -79,18 +69,14 @@ final class ImagensTabuleiroJogador {
 	private static final Map<String, Image> CACHE_TESOUROS = new HashMap<String, Image>();
 	private static final Map<String, Image> CACHE_BONUS = new HashMap<String, Image>();
 	private static final Map<String, Image> CACHE_CARTAS = new HashMap<String, Image>();
-	/** Marca no cache os arquivos procurados e não encontrados, para não procurar de novo. */
+	// marca no cache o que não foi achado, pra não procurar no disco toda hora
 	private static final Image AUSENTE = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
 
 	private ImagensTabuleiroJogador() {
 	}
 
-	/**
-	 * Imagem do tabuleiro do herdeiro dado.
-	 *
-	 * @param herdeiro  nome do herdeiro, como devolvido por {@code Jogo.getHerdeiro}
-	 * @param descricoesBase texto das ações iniciais de cada coluna (só para a imagem provisória)
-	 */
+	// Tabuleiro do herdeiro (nome como vem do Jogo.getHerdeiro). descricoesBase
+	// só é usado se precisar desenhar o quebra-galho.
 	static Image getImagem(String herdeiro, String[] descricoesBase) {
 		Image img = CACHE.get(herdeiro);
 		if (img == null) {
@@ -103,38 +89,28 @@ final class ImagensTabuleiroJogador {
 		return img;
 	}
 
-	/**
-	 * Imagem da ficha de ativação do jogador da cor dada (nome da cor no
-	 * Model, ex.: "AZUL"), ou {@code null} se o arquivo não existir.
-	 */
+	// ficha da cor ("AZUL", ...) ou null
 	static Image getFicha(String cor) {
 		return buscar(CACHE_FICHAS, PASTA_FICHAS, cor.toLowerCase());
 	}
 
-	/**
-	 * Imagem da peça de melhoria pelo id dado pelo Model (ex.: "CAV-V"), ou
-	 * {@code null} se o arquivo não existir.
-	 */
+	// melhoria pelo id ("CAV-V", ...) ou null
 	static Image getMelhoria(String id) {
 		return buscar(CACHE_MELHORIAS, PASTA_MELHORIAS, id);
 	}
 
-	/** Peça de tributo pelo nome do tipo no Model ("ESPADA", "YURT", "MOEDA"), ou {@code null}. */
 	static Image getTributo(String tipo) {
 		return buscar(CACHE_TRIBUTOS, PASTA_TRIBUTOS, tipo);
 	}
 
-	/** Peça de tesouro pelo nome do tipo no Model (ex.: "SEDA"), ou {@code null}. */
 	static Image getTesouro(String tipo) {
 		return buscar(CACHE_TESOUROS, PASTA_TESOUROS, tipo);
 	}
 
-	/** Carta pelo nome do tipo no Model (ex.: "VIAJANTE", "ESPADAS_4"). */
 	static Image getCarta(String tipo) {
 		return buscar(CACHE_CARTAS, PASTA_CARTAS, tipo);
 	}
 
-	/** Peça de bônus pelo nome do tipo no Model (ex.: "DUAS_ESPADAS"), ou {@code null}. */
 	static Image getBonus(String tipo) {
 		return buscar(CACHE_BONUS, PASTA_BONUS, tipo);
 	}
@@ -152,7 +128,7 @@ final class ImagensTabuleiroJogador {
 		return carregarArquivo(PASTA, herdeiro.toLowerCase());
 	}
 
-	/** Procura {@code pasta + nome + extensão} no disco e, se não achar, no classpath. */
+	// procura no disco e, se não achar, no classpath (pra funcionar também num .jar)
 	static Image carregarArquivo(String pasta, String nome) {
 		for (String ext : EXTENSOES) {
 			try {
@@ -171,7 +147,7 @@ final class ImagensTabuleiroJogador {
 		return null;
 	}
 
-	/** Desenha, com Java2D, uma imagem provisória do tabuleiro do jogador. */
+	// quebra-galho com Java2D quando a cartela não foi achada
 	private static Image criarImagemProvisoria(String herdeiro, String[] descricoesBase) {
 		int w = 920;
 		int h = (int) Math.round(w / PROPORCAO);
@@ -235,7 +211,7 @@ final class ImagensTabuleiroJogador {
 		g.fillPolygon(xs, ys, xs.length);
 	}
 
-	/** Escreve um texto de várias linhas (separadas por '\n') centralizado no retângulo. */
+	// texto com '\n' centralizado no retângulo
 	static void desenharTextoCentralizado(Graphics2D g, String texto, double x, double y, double w, double h,
 			Color cor) {
 		String[] linhas = texto.split("\n");

@@ -57,7 +57,7 @@ final class ImagensMapa {
 		return img;
 	}
 
-	/** null se não achar o arquivo. */
+	// null se não achar o arquivo.
 	static Image getKhan() {
 		if (!khanProcurado) {
 			khan = ImagensTabuleiroJogador.carregarArquivo(PASTA_PECAS, "KHAN");

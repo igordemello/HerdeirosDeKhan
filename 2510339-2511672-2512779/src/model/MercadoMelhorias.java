@@ -7,30 +7,21 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Área de melhorias (págs. 4, 11 e 16): a pilha das 44 peças de melhoria,
- * viradas para baixo, e as peças disponíveis, viradas para cima.
+/*
+ * Área de melhorias (págs. 4, 11 e 16): a pilha com as 44 peças viradas pra
+ * baixo e as 5 viradas pra cima. O jogador compra uma das viradas ou uma às
+ * cegas do topo. Depois da compra as que sobram andam pra direita e não
+ * aparece peça nova; isso só acontece quando o Khan vai pra área de
+ * melhorias.
  *
- * Regras:
- * <ul>
- * <li>na preparação, 5 peças são reveladas;</li>
- * <li>o jogador compra uma das disponíveis ou uma aleatória do topo da
- * pilha;</li>
- * <li>depois de uma compra as restantes vão para a direita, e nenhuma peça
- * nova é revelada; isso só acontece quando alguém coloca o Khan na área de
- * melhorias ({@link #renovar()}).</li>
- * </ul>
- *
- * Quantidades por tipo (pág. 16): moeda, espada e yurt virtuais 8 cada,
- * punho 6, dois cavalos 9 e 1 de cada tesouro virtual. O manual não diz
- * quantas peças de cada tipo há em cada cor; a tabela {@link #QUANTIDADES}
- * reparte as peças igualmente entre as três cores e pode ser corrigida com a
- * caixa do jogo em mãos.
+ * Quantidades (pág. 16): moeda, espada e yurt virtuais 8 de cada, punho 6,
+ * dois cavalos 9 e 1 de cada tesouro virtual. O manual não fala quantas de
+ * cada cor, então dividimos igual entre as três (tabela QUANTIDADES).
  */
 class MercadoMelhorias {
 	static final int PECAS_REVELADAS = 5;
 
-	/** { tipo, amarelas, vermelhas, verdes } */
+	// { tipo, amarelas, vermelhas, verdes }
 	private static final Object[][] QUANTIDADES = {
 			{ TipoMelhoria.MOEDA_VIRTUAL, 3, 3, 2 },
 			{ TipoMelhoria.ESPADA_VIRTUAL, 3, 2, 3 },
@@ -40,7 +31,7 @@ class MercadoMelhorias {
 	};
 
 	private final List<PecaMelhoria> pilha = new ArrayList<PecaMelhoria>();
-	/** Peças viradas para cima; o índice 0 é a mais à esquerda. */
+	// viradas pra cima; índice 0 = a mais da esquerda
 	private final List<PecaMelhoria> disponiveis = new ArrayList<PecaMelhoria>();
 
 	MercadoMelhorias(Random aleatorio) {
@@ -79,22 +70,19 @@ class MercadoMelhorias {
 		return pilha.size();
 	}
 
-	/** Total de peças ainda no mercado (pilha + disponíveis). */
 	int getTotal() {
 		return pilha.size() + disponiveis.size();
 	}
 
-	/** Peça disponível na posição dada, sem retirá-la, ou {@code null}. */
 	PecaMelhoria verDisponivel(int indice) {
 		return indice >= 0 && indice < disponiveis.size() ? disponiveis.get(indice) : null;
 	}
 
-	/** Peça do topo da pilha, sem retirá-la, ou {@code null} se a pilha acabou. */
 	PecaMelhoria verTopo() {
 		return pilha.isEmpty() ? null : pilha.get(pilha.size() - 1);
 	}
 
-	/** Retira a peça disponível da posição dada; as outras vão para a direita. */
+	// as outras andam pra direita
 	PecaMelhoria retirarDisponivel(int indice) {
 		if (indice < 0 || indice >= disponiveis.size()) {
 			throw new IllegalArgumentException("Não há melhoria disponível na posição " + indice);
@@ -102,7 +90,6 @@ class MercadoMelhorias {
 		return disponiveis.remove(indice);
 	}
 
-	/** Retira a peça do topo da pilha (compra às cegas). */
 	PecaMelhoria retirarDoTopo() {
 		if (pilha.isEmpty()) {
 			throw new IllegalStateException("A pilha de melhorias acabou");
@@ -110,16 +97,11 @@ class MercadoMelhorias {
 		return pilha.remove(pilha.size() - 1);
 	}
 
-	/** Devolve uma peça ao fundo da pilha. */
 	void devolverAoFundo(PecaMelhoria peca) {
 		pilha.add(0, peca);
 	}
 
-	/**
-	 * Renova as peças disponíveis (efeito do Khan na área de melhorias): as
-	 * que estavam viradas para cima vão para o fundo da pilha e 5 novas são
-	 * reveladas.
-	 */
+	// as 5 viradas vão pro fundo da pilha e saem 5 novas
 	void renovar() {
 		pilha.addAll(0, disponiveis);
 		disponiveis.clear();
@@ -145,9 +127,9 @@ class MercadoMelhorias {
 		}
 	}
 
-	// --------------------------------------------- salvar e carregar (4ª it.)
+	// salvar e carregar (4ª it.)
 
-	/** Peças da pilha, do fundo para o topo, e as disponíveis, da esquerda para a direita. */
+	// pilha do fundo pro topo; disponíveis da esquerda pra direita
 	void salvar(PrintWriter saida) {
 		ArquivoPartida.linha(saida, "disponiveis", ArquivoPartida.juntar(PecaMelhoria.ids(disponiveis)));
 		ArquivoPartida.linha(saida, "pilha", ArquivoPartida.juntar(PecaMelhoria.ids(pilha)));

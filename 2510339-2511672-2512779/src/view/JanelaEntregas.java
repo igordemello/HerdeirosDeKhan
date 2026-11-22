@@ -24,7 +24,7 @@ import model.Jogo;
 import model.ObservadoIF;
 import model.ObservadorIF;
 
-/**
+/*
  * Janela de entregas de tesouros aos conselheiros (págs. 12-13). Mostra os
  * tesouros do jogador da vez e, para cada conselheiro em que ele fez parada
  * neste turno, o pedido, os votos e a peça de bônus que ainda está lá.
@@ -68,7 +68,7 @@ class JanelaEntregas extends JDialog implements ObservadorIF {
 	void atualizar() {
 		conteudo.removeAll();
 		String cor = jogo.getJogadorDaVez();
-		setTitle("Entregar tesouros — vez de " + cor);
+		setTitle("Entregar tesouros - vez de " + cor);
 
 		titulo("Seus tesouros");
 		JPanel meus = linha();
@@ -160,7 +160,7 @@ class JanelaEntregas extends JDialog implements ObservadorIF {
 		conteudo.add(rotulo);
 	}
 
-	/** Botão "Entregar" de um conselheiro. */
+	// Botão "Entregar" de um conselheiro.
 	private class TratadorEntrega implements ActionListener {
 		private final String id;
 		private final List<String> pedido;
@@ -187,7 +187,7 @@ class JanelaEntregas extends JDialog implements ObservadorIF {
 		}
 	}
 
-	/** No BoxLayout, cada linha fica com a altura que precisa, sem esticar. */
+	// no BoxLayout a linha esticava; assim fica só com a altura que precisa
 	private void limitarAlturas() {
 		for (java.awt.Component c : conteudo.getComponents()) {
 			c.setMaximumSize(new Dimension(Integer.MAX_VALUE, c.getPreferredSize().height));

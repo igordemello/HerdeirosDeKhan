@@ -16,22 +16,20 @@ import java.util.Random;
 import java.util.Set;
 
 /*
- * Tabuleiro principal: o mapa com as paradas, as províncias e as cidades,
- * além da posição dos peões.
+ * Tabuleiro principal: paradas, províncias, cidades e onde está cada peão.
  *
- * Karakorum e as 9 cidades existem em qualquer partida e por isso são
- * criadas no construtor. As demais paradas, as rotas e as províncias são
- * acrescentadas pelos métodos de construção (usados pela
- * {@link FabricaTabuleiro} e pelos testes). Assim o mapa pode ser
- * completado ou corrigido sem alterar esta classe (aberto/fechado).
+ * Karakorum e as 9 cidades existem em qualquer partida, então já nascem no
+ * construtor. O resto (paradas, rotas e províncias) entra pelos métodos de
+ * construção, que a FabricaTabuleiro e os testes usam. Dá pra mudar o mapa
+ * sem mexer nesta classe (princípio aberto/fechado).
  *
- * As consultas recebem identificadores de parada; um identificador
- * inexistente gera {@link IllegalArgumentException}.
+ * Os métodos recebem o id da parada; id que não existe dá
+ * IllegalArgumentException.
  */
 
 class Tabuleiro {
 	static final String ID_KARAKORUM = "KARAKORUM";
-	/** Cidades disponíveis para ataque ao mesmo tempo. */
+	// Cidades disponíveis para ataque ao mesmo tempo.
 	static final int CIDADES_DISPONIVEIS = 3;
 
 	private final Map<String, Parada> paradas = new HashMap<String, Parada>();
@@ -61,7 +59,7 @@ class Tabuleiro {
 		}
 	}
 
-	// ================================================== construção do mapa
+	// construção do mapa
 
 	Parada adicionarParada(String id, TipoParada tipo, Regiao regiao) {
 		if (tipo == TipoParada.KARAKORUM) {
@@ -84,7 +82,7 @@ class Tabuleiro {
 		return provincia;
 	}
 
-	/** Cria uma rota entre duas paradas (a ligação vale nos dois sentidos). */
+	// Cria uma rota entre duas paradas (a ligação vale nos dois sentidos).
 	void ligarParadas(String idA, String idB) {
 		if (idA != null && idA.equals(idB)) {
 			throw new IllegalArgumentException("Uma parada não pode ser ligada a si mesma: " + idA);
@@ -109,12 +107,12 @@ class Tabuleiro {
 		cidade.adicionarParadaAdjacente(parada);
 	}
 
-	/** Registra uma das 2 setas que partem de uma província do Khan. */
+	// Registra uma das 2 setas que partem de uma província do Khan.
 	void definirAlvoDoKhan(String idProvinciaDoKhan, String idAlvo) {
 		buscarProvincia(idProvinciaDoKhan).adicionarAlvoDoKhan(buscarProvincia(idAlvo));
 	}
 
-	// ============================================================ consultas
+	// consultas
 
 	boolean existeParada(String id) {
 		return paradas.containsKey(id);
@@ -132,7 +130,7 @@ class Tabuleiro {
 		return Collections.unmodifiableCollection(paradas.values());
 	}
 
-	/** Se existe uma rota ligando diretamente as duas paradas. */
+	// Se existe uma rota ligando diretamente as duas paradas.
 	boolean saoVizinhas(String idA, String idB) {
 		Parada b = buscarParada(idB);
 		return buscarParada(idA).ehVizinhaDe(b.getId());
@@ -150,10 +148,8 @@ class Tabuleiro {
 		return buscarParada(idParada).getCidadesAdjacentes();
 	}
 
-	/**
-	 * "Dono" de uma parada: as cores dos yurts construídos nela. A lista é
-	 * vazia se não houver yurt e pode ter 2 elementos numa parada dupla.
-	 */
+	// "Dono" de uma parada: as cores dos yurts construídos nela. A lista é
+	// vazia se não houver yurt e pode ter 2 elementos numa parada dupla.
 	List<Cor> getDonosDosYurts(String idParada) {
 		return buscarParada(idParada).getYurts();
 	}
@@ -162,17 +158,13 @@ class Tabuleiro {
 		return buscarParada(idParada).getNumeroDePeoes();
 	}
 
-	/** @return a parada onde o peão está, ou {@code null} se ele não está no mapa */
+	// null se o peão não está no mapa
 	Parada getParadaDoPeao(Peao peao) {
 		return posicaoDosPeoes.get(peao);
 	}
 
-	/**
-	 * Menor número de rotas entre a parada e Karakorum (busca em largura).
-	 * Usado no desempate do vencedor (pág. 16).
-	 *
-	 * @return a distância, ou {@code Integer.MAX_VALUE} se não houver caminho
-	 */
+	// Menor número de rotas até Karakorum (busca em largura), pro desempate do
+	// vencedor (pág. 16). Integer.MAX_VALUE se não tiver caminho.
 	int distanciaAteKarakorum(String idParada) {
 		Parada alvo = buscarParada(idParada);
 		Map<Parada, Integer> distancia = new HashMap<Parada, Integer>();
@@ -194,11 +186,9 @@ class Tabuleiro {
 		return Integer.MAX_VALUE;
 	}
 
-	/**
-	 * Yurts do jogador numa região: os das paradas da região mais o yurt no
-	 * meio das cidades que ele conquistou ali. O yurt de Tolui em Karakorum
-	 * não conta para nenhuma região (pág. 20).
-	 */
+	// Yurts do jogador numa região: os das paradas da região mais o yurt no
+	// meio das cidades que ele conquistou ali. O yurt de Tolui em Karakorum
+	// não conta para nenhuma região (pág. 20).
 	int contarYurtsNaRegiao(Cor cor, Regiao regiao) {
 		if (cor == null || regiao == null) {
 			throw new IllegalArgumentException("Cor e região não podem ser nulas");
@@ -217,10 +207,8 @@ class Tabuleiro {
 		return total;
 	}
 
-	/**
-	 * Todos os yurts do jogador no mapa (cartas abertas de 6 e 10 yurts).
-	 * Aqui o yurt de Tolui em Karakorum conta (pág. 20).
-	 */
+	// Todos os yurts do jogador no mapa (cartas abertas de 6 e 10 yurts).
+	// Aqui o yurt de Tolui em Karakorum conta (pág. 20).
 	int contarYurtsNoMapa(Cor cor) {
 		if (cor == null) {
 			throw new IllegalArgumentException("Cor nula");
@@ -270,7 +258,7 @@ class Tabuleiro {
 		return pilhaDeCidades.size();
 	}
 
-	/** Uma das condições de fim de jogo (pág. 14). */
+	// Uma das condições de fim de jogo (pág. 14).
 	boolean todasAsCidadesConquistadas() {
 		for (Cidade cidade : cidades.values()) {
 			if (cidade.getEstado() != Cidade.Estado.CONQUISTADA) {
@@ -284,9 +272,9 @@ class Tabuleiro {
 		return preparado;
 	}
 
-	// =========================================================== alterações
+	// alterações
 
-	/** Coloca no mapa um peão que ainda não está nele. */
+	// Coloca no mapa um peão que ainda não está nele.
 	void colocarPeao(Peao peao, String idParada) {
 		if (posicaoDosPeoes.containsKey(peao)) {
 			throw new IllegalStateException(peao + " já está no tabuleiro");
@@ -296,16 +284,10 @@ class Tabuleiro {
 		posicaoDosPeoes.put(peao, parada);
 	}
 
-	/**
-	 * Move um peão pelo caminho dado (pág. 7). Cada passo vai para uma parada
-	 * vizinha e gasta 1 movimento, mas pular um yurt do próprio jogador não
-	 * gasta movimento. O peão pode passar por paradas ocupadas; só a parada
-	 * onde ele termina precisa ter lugar.
-	 *
-	 * @param caminho    paradas percorridas, sem a de origem; a última é o destino
-	 * @param movimentos quantos movimentos (cavalos) o jogador tem neste turno
-	 * @return {@code false} se o caminho não respeita as regras (nada é alterado)
-	 */
+	// Move o peão pelo caminho dado (pág. 7). Cada passo vai pra uma vizinha e
+	// gasta 1 movimento; pular yurt próprio não gasta. Pode passar por parada
+	// ocupada, só o destino precisa ter lugar. O caminho não tem a origem.
+	// Se não valer, devolve false e não mexe em nada.
 	boolean moverPeao(Peao peao, List<String> caminho, int movimentos) {
 		Parada origem = posicaoDosPeoes.get(peao);
 		if (origem == null) {
@@ -336,22 +318,13 @@ class Tabuleiro {
 		return true;
 	}
 
-	/**
-	 * Move o peão até a parada clicada pelo jogador (pág. 7). Como o jogador
-	 * indica só o destino, o caminho é procurado aqui, respeitando as regras:
-	 * cada passo vai para uma parada vizinha; passar por um yurt próprio não
-	 * gasta movimento; o peão pode passar por paradas ocupadas, mas só pode
-	 * terminar numa parada com lugar (dupla e Karakorum cabem mais peões); o
-	 * total gasto não passa de {@code movimentos}. Entre os caminhos válidos é
-	 * usado o que gasta menos movimentos.
-	 *
-	 * @param idDestino  parada clicada
-	 * @param movimentos quantos movimentos (cavalos) o jogador tem neste turno
-	 * @return as paradas em que o peão esteve, da origem ao destino, para pegar
-	 *         tributos e construir yurts depois. As paradas com yurt próprio
-	 *         que ele pulou não entram, pois ele nunca esteve nelas (pág. 8).
-	 *         Lista vazia se o movimento não for possível (nada é alterado).
-	 */
+	// Move o peão até a parada clicada (pág. 7). O jogador só diz o destino,
+	// então o caminho é procurado aqui com as mesmas regras do moverPeao, e
+	// fica o que gasta menos movimentos.
+	// Devolve as paradas em que o peão esteve, da origem ao destino, que depois
+	// servem pra pegar tributo e construir yurt. Os yurts próprios que ele
+	// pulou não entram, porque ele nunca esteve neles (pág. 8). Se não der pra
+	// chegar, devolve lista vazia.
 	List<String> moverPeaoAte(Peao peao, String idDestino, int movimentos) {
 		List<Parada> caminho = buscarCaminho(peao, idDestino, movimentos);
 		if (caminho == null) {
@@ -371,19 +344,13 @@ class Tabuleiro {
 		return Collections.unmodifiableList(visitadas);
 	}
 
-	/** Se o peão consegue chegar à parada com os movimentos dados (nada é alterado). */
+	// só testa, não move
 	boolean podeMoverPeaoAte(Peao peao, String idDestino, int movimentos) {
 		return buscarCaminho(peao, idDestino, movimentos) != null;
 	}
 
-	/**
-	 * Constrói um yurt do jogador na parada, tirando-o da reserva dele.
-	 * O pagamento da peça de tributo de yurt e a verificação de que o
-	 * jogador passou pela parada ficam a cargo de quem chama.
-	 *
-	 * @return {@code false} se a parada não aceita mais yurts ou se o
-	 *         jogador não tem yurts na reserva (nada é alterado)
-	 */
+	// Põe o yurt na parada tirando da reserva do jogador. Pagar a peça de
+	// tributo e ver se ele passou pela parada é com quem chama (o Jogo).
 	boolean construirYurt(Jogador jogador, String idParada) {
 		if (jogador == null) {
 			throw new IllegalArgumentException("Jogador nulo");
@@ -399,13 +366,9 @@ class Tabuleiro {
 		return true;
 	}
 
-	/**
-	 * Registra a conquista de uma cidade disponível (o último tesouro foi
-	 * tomado): o jogador coloca um yurt seu no meio dela, se ainda tiver, e
-	 * a próxima peça de cidade é revelada (pág. 10).
-	 *
-	 * @return a cidade revelada no lugar, ou {@code null} se a pilha acabou
-	 */
+	// Pegaram o último tesouro: o jogador põe um yurt no meio da cidade (se
+	// ainda tiver) e a próxima da pilha é revelada (pág. 10). Devolve a cidade
+	// revelada, ou null se a pilha acabou.
 	Cidade conquistarCidade(NomeCidade nome, Jogador jogador) {
 		if (jogador == null) {
 			throw new IllegalArgumentException("Jogador nulo");
@@ -418,7 +381,7 @@ class Tabuleiro {
 		return revelarProximaCidade();
 	}
 
-	// ================================================================= Khan
+	// Khan
 
 	String getLugarDoKhan() {
 		return lugarDoKhan;
@@ -468,16 +431,11 @@ class Tabuleiro {
 		return lista;
 	}
 
-	// ============================================================ preparação
+	// preparação
 
-	/**
-	 * Preparação do tabuleiro:
-	 * embaralha as peças de cidade e revela 3;
-	 * coloca os peões de todos os jogadores em Karakorum (Altani tem 2);
-	 * Tolui coloca 1 yurt da sua reserva em Karakorum;
-	 * coloca 1 peça de tributo em cada província.
-	 * Tesouros, peças de bônus e melhorias serão tratados depois.
-	 */
+	// Preparação (pág. 4): embaralha as cidades e revela 3, põe todos os peões
+	// em Karakorum (Altani tem 2), o Tolui já põe 1 yurt lá e cada província
+	// ganha 1 tributo. Tesouros, bônus e melhorias o Jogo prepara.
 	void preparar(Collection<Jogador> jogadores, Random aleatorio) {
 		if (preparado) {
 			throw new IllegalStateException("O tabuleiro já foi preparado");
@@ -511,7 +469,7 @@ class Tabuleiro {
 		preparado = true;
 	}
 
-	// ============================================================== apoio
+	// apoio
 
 	private Cidade revelarProximaCidade() {
 		if (pilhaDeCidades.isEmpty()) {
@@ -522,15 +480,10 @@ class Tabuleiro {
 		return cidade;
 	}
 
-	/**
-	 * Caminho que gasta menos movimentos da parada do peão até o destino.
-	 * É uma busca em largura "0-1": entrar numa parada intermediária com yurt
-	 * próprio custa 0 e nas demais custa 1, por isso as de custo 0 entram no
-	 * início da fila e as de custo 1 no fim. Chegar ao destino sempre custa 1.
-	 *
-	 * @return as paradas do caminho (origem ... destino), ou {@code null} se o
-	 *         destino não pode ser alcançado com esses movimentos
-	 */
+	// Caminho mais barato até o destino. É uma BFS 0-1: entrar numa parada do
+	// meio que tem yurt próprio custa 0 (vai pro começo da fila) e nas outras
+	// custa 1 (vai pro fim). Chegar no destino sempre custa 1.
+	// Devolve origem ... destino, ou null se não dá com esses movimentos.
 	private List<Parada> buscarCaminho(Peao peao, String idDestino, int movimentos) {
 		Parada origem = posicaoDosPeoes.get(peao);
 		if (origem == null) {
@@ -586,7 +539,7 @@ class Tabuleiro {
 		return caminho;
 	}
 
-	/** Vizinhas em ordem de id, para que o caminho escolhido seja sempre o mesmo. */
+	// ordena pelo id pra o caminho escolhido ser sempre o mesmo
 	private List<Parada> vizinhasEmOrdem(Parada parada) {
 		List<String> ids = new ArrayList<String>();
 		for (Parada vizinha : parada.getVizinhas()) {
@@ -616,7 +569,7 @@ class Tabuleiro {
 		return provincia;
 	}
 
-	// ===================================================== salvar e carregar
+	// salvar e carregar
 	// Parte do Arthur na 4ª iteração: tudo o que fica no mapa vai na seção
 	// [MAPA]. O que só vale durante um turno não entra, porque o jogo só
 	// salva antes de um jogador começar a jogar. Exemplo:
@@ -677,13 +630,8 @@ class Tabuleiro {
 		}
 	}
 
-	/**
-	 * Troca o mapa pelo que está na seção [MAPA]. Primeiro lê e confere tudo;
-	 * só depois mexe no tabuleiro. Assim, se o arquivo estiver errado, o mapa
-	 * continua como estava.
-	 *
-	 * @throws IllegalArgumentException se falta algo ou os dados não fazem sentido
-	 */
+	// Troca o mapa pelo da seção [MAPA]. Primeiro lê e confere tudo e só depois
+	// mexe no tabuleiro, assim um arquivo errado não deixa o mapa pela metade.
 	void carregar(Map<String, String> secao, Collection<Jogador> jogadores) {
 		Map<Cor, Jogador> porCor = new HashMap<Cor, Jogador>();
 		for (Jogador j : jogadores) {

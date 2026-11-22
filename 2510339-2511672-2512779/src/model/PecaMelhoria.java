@@ -3,7 +3,7 @@ package model;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
+/*
  * Uma peça de melhoria: o tipo e a cor de fundo da peça.
  *
  * O id (ex.: "CAV-V") identifica a imagem da peça, para que a View a
@@ -35,16 +35,12 @@ final class PecaMelhoria {
 		return cor;
 	}
 
-	/** Identificador da peça, igual ao nome da imagem (ex.: "CAV-V"). */
+	// Identificador da peça, igual ao nome da imagem (ex.: "CAV-V").
 	String getId() {
 		return tipo.getSigla() + "-" + cor.getSigla();
 	}
 
-	/**
-	 * Recria a peça a partir do id (ex.: "CAV-V"), ao carregar uma partida.
-	 *
-	 * @throws IllegalArgumentException se o id não é de nenhuma peça
-	 */
+	// usado ao carregar; id que não existe dá IllegalArgumentException
 	static PecaMelhoria deId(String id) {
 		int traco = id == null ? -1 : id.indexOf('-');
 		if (traco < 0) {
@@ -70,7 +66,6 @@ final class PecaMelhoria {
 		return new PecaMelhoria(tipo, cor);
 	}
 
-	/** Converte uma lista de ids em peças. */
 	static List<PecaMelhoria> deIds(List<String> ids) {
 		List<PecaMelhoria> pecas = new ArrayList<PecaMelhoria>();
 		for (String id : ids) {
@@ -79,7 +74,6 @@ final class PecaMelhoria {
 		return pecas;
 	}
 
-	/** Converte uma lista de peças nos seus ids. */
 	static List<String> ids(List<PecaMelhoria> pecas) {
 		List<String> ids = new ArrayList<String>();
 		for (PecaMelhoria p : pecas) {

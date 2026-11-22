@@ -1,10 +1,9 @@
 package model;
 
-/**
- * Observador do padrão Observer (Capítulo 17): é notificado quando o estado
- * da partida muda e pede ao observado os dados de que precisa. No jogo, os
- * observadores são as partes da interface gráfica (tabuleiro, área lateral e
- * janelas).
+/*
+ * Observador do Observer (Capítulo 17). É avisado quando a partida muda e
+ * pede ao observado o que precisar. No jogo são as partes da interface
+ * (tabuleiro, área lateral e as janelas).
  */
 public interface ObservadorIF {
 	void notify(ObservadoIF o);

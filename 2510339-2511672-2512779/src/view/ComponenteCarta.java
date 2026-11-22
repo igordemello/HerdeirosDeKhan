@@ -46,7 +46,7 @@ class ComponenteCarta extends JComponent {
 	// null = desenha com Java2D
 	private final Image imagem;
 
-	/** Carta secreta: título, condição, limiares e (opcional) progresso. */
+	// Carta secreta: título, condição, limiares e (opcional) progresso.
 	static ComponenteCarta secreta(Image imagem, String titulo, String descricao, List<Integer> limiares,
 			String rodape) {
 		List<String> linhas = new ArrayList<String>();
@@ -56,7 +56,7 @@ class ComponenteCarta extends JComponent {
 		return new ComponenteCarta(imagem, true, titulo, descricao, null, linhas, rodape);
 	}
 
-	/** Carta aberta: número exigido em destaque e a condição. */
+	// Carta aberta: número exigido em destaque e a condição.
 	static ComponenteCarta aberta(Image imagem, int quantidade, String descricao, String rodape) {
 		return new ComponenteCarta(imagem, false, "Conselheiro aberto", descricao, String.valueOf(quantidade),
 				new ArrayList<String>(), rodape);

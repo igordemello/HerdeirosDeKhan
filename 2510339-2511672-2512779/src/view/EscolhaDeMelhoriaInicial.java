@@ -16,7 +16,7 @@ import javax.swing.WindowConstants;
 
 import model.Jogo;
 
-/**
+/*
  * Janela modal da habilidade do Jochi, no início da partida: mostra as 2
  * melhorias tiradas ao acaso e o jogador clica na que vai para a coluna
  * branca. A outra volta para a pilha.
@@ -48,7 +48,7 @@ final class EscolhaDeMelhoriaInicial extends JDialog {
 		setLocationRelativeTo(origem);
 	}
 
-	/** Abre a janela se algum jogador (o Jochi) ainda tem a escolha pendente. */
+	// Abre a janela se algum jogador (o Jochi) ainda tem a escolha pendente.
 	static void mostrarSePendente(Component origem, Jogo jogo) {
 		String cor = jogo.getCorComMelhoriaInicialParaEscolher();
 		if (cor != null) {

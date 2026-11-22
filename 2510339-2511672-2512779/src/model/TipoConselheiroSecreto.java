@@ -1,6 +1,6 @@
 package model;
 
-/**
+/*
  * As 10 cartas de conselheiro secreto (pág. 19). Cada uma dá 1, 2 ou 3 votos
  * no final do jogo conforme a quantidade atingida pelo jogador ultrapasse
  * os três limiares impressos na carta.
@@ -35,7 +35,7 @@ enum TipoConselheiroSecreto {
 		return descricao;
 	}
 
-	/** Quantidade mínima necessária para obter {@code votos} votos (1 a 3). */
+	// quanto precisa pra ganhar 1, 2 ou 3 votos
 	int getLimiar(int votos) {
 		if (votos < 1 || votos > 3) {
 			throw new IllegalArgumentException("Votos devem estar entre 1 e 3");
@@ -43,10 +43,7 @@ enum TipoConselheiroSecreto {
 		return limiares[votos - 1];
 	}
 
-	/**
-	 * Calcula quantos votos (0 a 3) a carta concede para a quantidade
-	 * atingida pelo jogador na condição da carta.
-	 */
+	// votos (0 a 3) que a carta dá pra quantidade que o jogador conseguiu
 	int calcularVotos(int quantidadeAtingida) {
 		int votos = 0;
 		for (int limiar : limiares) {

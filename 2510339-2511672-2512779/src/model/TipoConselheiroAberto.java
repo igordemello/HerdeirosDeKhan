@@ -1,6 +1,6 @@
 package model;
 
-/**
+/*
  * As 14 cartas de conselheiro aberto (pág. 18). O primeiro jogador a cumprir
  * a demanda de uma carta revelada ganha 1 voto e retira a carta do jogo.
  */
@@ -32,7 +32,7 @@ enum TipoConselheiroAberto {
 		return descricao;
 	}
 
-	/** Número impresso na carta (quantidade exigida pela demanda). */
+	// Número impresso na carta (quantidade exigida pela demanda).
 	int getQuantidade() {
 		return quantidade;
 	}

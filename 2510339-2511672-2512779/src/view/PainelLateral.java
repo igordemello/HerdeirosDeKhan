@@ -35,37 +35,25 @@ import model.Jogo;
 import model.ObservadoIF;
 import model.ObservadorIF;
 
-/**
- * Área lateral da janela do jogo: mostra o jogador da vez e o tabuleiro dele.
+/*
+ * Área da direita: jogador da vez e o tabuleiro dele. O fundo fica da cor do
+ * jogador (como na Figura 4 do enunciado) e a cartela é desenhada com
+ * drawImage(), com as fichas e as melhorias por cima. Pra ativar uma coluna
+ * dá pra usar o combo + botão ou clicar direto na coluna. Tem também um
+ * combo de teste pra escolher os movimentos (no lugar dos dados).
  *
- * <ul>
- * <li>o fundo da área é pintado com a cor do jogador da vez (Figura 4 do
- * enunciado);</li>
- * <li>o tabuleiro do jogador da vez é desenhado com {@code drawImage()}, e as
- * fichas de ativação colocadas aparecem sobre as colunas;</li>
- * <li>um JComboBox e um botão permitem escolher a coluna a ativar (também
- * é possível clicar na coluna do tabuleiro);</li>
- * <li>um JComboBox permite ao testador definir o número de movimentos.</li>
- * </ul>
- *
- * É observador da partida: sempre que o estado muda (a vez passa, uma
- * coluna é ativada...), o Model avisa e o painel chama {@link #atualizar()}.
- *
- * Os eventos são tratados por classes internas (sem expressões lambda),
- * como pede o enunciado.
+ * É observador da partida: quando o Model avisa, chama atualizar(). Os
+ * eventos ficam em classes internas porque lambda é proibido.
  */
 public class PainelLateral extends JPanel implements ObservadorIF {
 	private static final long serialVersionUID = 1L;
 
-	/** Largura sugerida do painel, em pixels. */
 	public static final int LARGURA = 420;
-	/** Maior número de movimentos oferecido no JComboBox de teste. */
 	private static final int MAX_MOVIMENTOS_TESTE = 12;
 	private static final int MARGEM = 16;
-	/** Altura da parte desenhada (cabeçalho, tabuleiro e resumo); os controles ficam abaixo. */
+	// altura da parte desenhada; os controles vêm logo depois
 	private static final int ALTURA_DESENHO = 410;
 
-	/** Cor de fundo de cada jogador (chave = nome da cor no Model). */
 	private static final Map<String, Color> CORES = new HashMap<String, Color>();
 	static {
 		CORES.put("AZUL", new Color(36, 92, 196));
@@ -75,7 +63,6 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		CORES.put("ROXO", new Color(118, 58, 168));
 	}
 
-	/** Nome das colunas para exibição (chave = nome no Model). */
 	private static final Map<String, String> NOMES_COLUNAS = new HashMap<String, String>();
 	static {
 		NOMES_COLUNAS.put("AMARELA", "Amarela");
@@ -84,7 +71,7 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		NOMES_COLUNAS.put("BRANCA", "Branca");
 	}
 
-	/** Abreviação das melhorias desenhadas sobre os espaços das colunas. */
+	// texto que aparece se a imagem da melhoria não carregar
 	private static final Map<String, String> NOMES_MELHORIAS = new HashMap<String, String>();
 	static {
 		NOMES_MELHORIAS.put("MOEDA_VIRTUAL", "moeda\nvirtual");
@@ -104,19 +91,18 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 
 	private final JComboBox<String> comboColunas = new JComboBox<String>();
 	private final JButton botaoAtivar = new JButton("Ativar");
-	/** Salva a partida (4ª iteração); quem trata o clique é o Controller. */
+	// o clique é tratado no Controller
 	private final JButton botaoSalvar = new JButton("Salvar");
 	private final JComboBox<Integer> comboMovimentos = new JComboBox<Integer>();
 	private final JLabel rotuloColuna = new JLabel("Coluna:");
 	private final JLabel rotuloMovimentos = new JLabel("Mov.:");
 
-	/** Evita que as mudanças feitas pelo próprio painel nos JComboBox disparem eventos. */
+	// pra não disparar o tratador quando é o próprio painel que muda o combo
 	private boolean atualizandoComponentes = false;
 
-	/** Onde o tabuleiro foi desenhado na última pintura (para tratar cliques). */
+	// onde a cartela foi desenhada da última vez (pro clique nas colunas)
 	private Rectangle areaTabuleiro = new Rectangle();
 
-	/** Votos, tributos, tesouros, bônus e botões das janelas (3ª iteração). */
 	private final PainelRecursos recursos;
 	private JanelaMercado janelaMercado;
 	private JanelaEntregas janelaEntregas;
@@ -163,14 +149,13 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		atualizar();
 	}
 
-	// --------------------------------------------------------------- estado
+	// estado
 
 	@Override
 	public void notify(ObservadoIF o) {
 		atualizar();
 	}
 
-	/** Lê de novo o estado do jogo e redesenha o painel. */
 	public void atualizar() {
 		atualizandoComponentes = true;
 		try {
@@ -220,9 +205,9 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		barraDoTurno.mostrarMensagem(texto);
 	}
 
-	// ------------------------------------------------- janelas do jogador
+	// janelas do jogador
 
-	/** Abre (ou traz para a frente) a janela de melhorias. */
+	// as janelas abaixo são criadas uma vez só e depois só voltam pra frente
 	void abrirMelhorias() {
 		if (janelaMercado == null) {
 			janelaMercado = new JanelaMercado(SwingUtilities.getWindowAncestor(this), jogo);
@@ -230,7 +215,6 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		mostrar(janelaMercado);
 	}
 
-	/** Abre (ou traz para a frente) a janela de entregas aos conselheiros. */
 	void abrirEntregas() {
 		if (janelaEntregas == null) {
 			janelaEntregas = new JanelaEntregas(SwingUtilities.getWindowAncestor(this), jogo);
@@ -238,7 +222,6 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		mostrar(janelaEntregas);
 	}
 
-	/** Abre (ou traz para a frente) a janela de cartas do jogador da vez. */
 	void abrirCartas() {
 		if (janelaCartas == null) {
 			janelaCartas = new JanelaCartas(SwingUtilities.getWindowAncestor(this), jogo);
@@ -254,13 +237,9 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		janela.toFront();
 	}
 
-	/**
-	 * Escolha dos conselheiros secretos no início da partida: abre, para cada
-	 * jogador, uma janela modal com as 2 cartas dele. Deve ser chamado pelo
-	 * Controller antes da primeira rodada (pág. 6). Em seguida, se o Jochi
-	 * estiver na partida, ele escolhe a melhoria inicial da coluna branca.
-	 * Numa partida carregada, só abre o que ainda estiver pendente.
-	 */
+	// Antes da primeira rodada (pág. 6): cada jogador escolhe a carta secreta
+	// numa janela modal, e depois o Jochi (se estiver jogando) escolhe a
+	// melhoria da coluna branca. Numa partida carregada só pergunta o que falta.
 	public void escolherConselheirosSecretos() {
 		JanelaCartas.escolherConselheirosSecretos(SwingUtilities.getWindowAncestor(this), jogo);
 		EscolhaDeMelhoriaInicial.mostrarSePendente(this, jogo);
@@ -270,7 +249,7 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		return coluna != null && jogo.ativarColuna(coluna);
 	}
 
-	// ------------------------------------------------------------- desenho
+	// desenho
 
 	@Override
 	protected void paintComponent(Graphics g) {
@@ -320,7 +299,7 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		g2.dispose();
 	}
 
-	/** Texto das ações iniciais de cada coluna, usado na imagem provisória. */
+	// texto das ações da base, só usado se a cartela não carregar
 	private String[] descricoesBase(String cor) {
 		String[] textos = new String[colunas.size()];
 		for (int i = 0; i < colunas.size(); i++) {
@@ -365,11 +344,7 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		return n;
 	}
 
-	/**
-	 * Desenha as peças de melhoria de cada coluna sobre os espaços do
-	 * tabuleiro, de baixo para cima, com a imagem da peça (pelo id dado pelo
-	 * Model, ex.: "CAV-V"). Sem a imagem, desenha um cartão com o nome.
-	 */
+	// melhorias de baixo pra cima; sem imagem desenha um cartãozinho com o nome
 	private void desenharMelhorias(Graphics2D g2, String cor) {
 		for (int i = 0; i < colunas.size(); i++) {
 			List<String> melhorias = jogo.getMelhoriasDaColuna(cor, colunas.get(i));
@@ -392,7 +367,7 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		}
 	}
 
-	/** Desenha as fichas de ativação e destaca a coluna ativada neste turno. */
+	// fichas de ativação + contorno na coluna ativada no turno
 	private void desenharFichas(Graphics2D g2, String cor, Color corJogador) {
 		String ativada = jogo.getColunaAtivadaNaVez();
 		for (int i = 0; i < colunas.size(); i++) {
@@ -478,7 +453,6 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		return y + lado;
 	}
 
-	/** Retângulo de uma célula da coluna i, na linha cujo topo é yFrac. */
 	private Rectangle celula(int coluna, double yFrac) {
 		int x = areaTabuleiro.x + (int) Math.round(ImagensTabuleiroJogador.X_COLUNA[coluna] * areaTabuleiro.width);
 		int y = areaTabuleiro.y + (int) Math.round(yFrac * areaTabuleiro.height);
@@ -487,7 +461,7 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		return new Rectangle(x, y, w, h);
 	}
 
-	/** Coluna do tabuleiro que contém o ponto, ou -1. */
+	// -1 se o clique não foi numa coluna
 	private int colunaNoPonto(int px, int py) {
 		if (!areaTabuleiro.contains(px, py)) {
 			return -1;
@@ -507,13 +481,13 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		return c == null ? Color.GRAY : c;
 	}
 
-	/** Preto sobre fundos claros (amarelo), branco sobre os escuros. */
+	// Preto sobre fundos claros (amarelo), branco sobre os escuros.
 	private static Color corDoTexto(Color fundo) {
 		double luminancia = 0.299 * fundo.getRed() + 0.587 * fundo.getGreen() + 0.114 * fundo.getBlue();
 		return luminancia > 160 ? Color.BLACK : Color.WHITE;
 	}
 
-	// ----------------------------------------------------------- controles
+	// controles
 
 	private JPanel criarPainelDeControles() {
 		// tudo numa linha só pra sobrar altura em notebook
@@ -533,9 +507,8 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		return controles;
 	}
 
-	// ------------------------------------------------- tratadores de eventos
+	// tratadores de eventos
 
-	/** Botão "Ativar coluna": ativa a coluna escolhida no JComboBox. */
 	private class TratadorAtivarColuna implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -543,7 +516,7 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		}
 	}
 
-	/** JComboBox de teste: define à mão o número de movimentos do turno. */
+	// combo de teste dos movimentos
 	private class TratadorMovimentos implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -558,7 +531,6 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		}
 	}
 
-	/** Clique numa coluna do tabuleiro desenhado: ativa a coluna, se puder. */
 	private class TratadorCliqueNoTabuleiro extends MouseAdapter {
 		@Override
 		public void mouseClicked(MouseEvent e) {
@@ -569,7 +541,7 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		}
 	}
 
-	/** Mostra os nomes das colunas com a inicial maiúscula e o número de cavalos. */
+	// mostra "Verde (2 cav.)" no combo em vez do nome do enum
 	private class RenderizadorColuna extends javax.swing.DefaultListCellRenderer {
 		private static final long serialVersionUID = 1L;
 

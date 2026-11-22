@@ -63,7 +63,7 @@ class Cidade {
 		return conquistador;
 	}
 
-	// ---------------------------------------------------------- adjacências
+	// adjacências
 
 	void adicionarParadaAdjacente(Parada parada) {
 		paradasAdjacentes.put(parada.getId(), parada);
@@ -85,7 +85,7 @@ class Cidade {
 		return total;
 	}
 
-	// ------------------------------------------------------ revelar/conquistar
+	// revelar/conquistar
 
 	void revelar() {
 		if (estado != Estado.NA_PILHA) {
@@ -106,7 +106,7 @@ class Cidade {
 		temYurtDoConquistador = colocouYurt;
 	}
 
-	// ---------------------------------------------------------------- tesouros
+	// tesouros
 
 	void colocarTesouros(List<TipoTesouro> novos) {
 		if (novos == null) {

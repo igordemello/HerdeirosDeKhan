@@ -18,8 +18,8 @@ import java.awt.geom.RoundRectangle2D;
 
 import javax.swing.JComponent;
 
-/**
- * Peça do jogo desenhada com {@code drawImage()} e que pode ser clicada,
+/*
+ * Peça do jogo desenhada com drawImage() e que pode ser clicada,
  * usada para escolher melhorias, tesouros e peças de bônus. Quando não há
  * imagem, desenha o verso de uma peça com um texto (ex.: o topo da pilha).
  */

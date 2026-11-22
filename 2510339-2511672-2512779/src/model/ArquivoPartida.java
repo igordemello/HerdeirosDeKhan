@@ -1,6 +1,5 @@
 package model;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
@@ -9,24 +8,21 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
-/**
- * Formato do arquivo de partida salva (4ª iteração, Capítulo 16).
+/*
+ * Formato do arquivo da partida salva (4ª iteração, Capítulo 16). É texto
+ * ASCII dividido em seções: uma linha [NOME] e depois uma linha chave=valor
+ * por dado. Lista vai separada por vírgula e par por dois-pontos. Exemplo:
  *
- * O arquivo é texto ASCII puro, dividido em seções. Cada seção começa com
- * uma linha {@code [NOME]} e tem uma linha {@code chave=valor} por dado;
- * listas são separadas por vírgula e pares por dois-pontos:
+ *   HERDEIROS_DO_KHAN 1
+ *   [JOGADOR AZUL]
+ *   tributos=ESPADA:2,YURT:0,MOEDA:3
+ *   melhorias.VERDE=CAV-V,MAO-V
  *
- * <pre>
- * HERDEIROS_DO_KHAN 1
- * [JOGADOR AZUL]
- * tributos=ESPADA:2,YURT:0,MOEDA:3
- * melhorias.VERDE=CAV-V,MAO-V
- * </pre>
- *
- * Só se salva antes de um jogador começar o turno, então nada do que vale
- * só durante o turno vai para o arquivo. Cada parte do Model escreve e lê as
- * suas próprias seções; aqui ficam só as funções comuns a todas.
+ * Só dá pra salvar antes do jogador começar o turno, então o que só vale
+ * dentro do turno não vai pro arquivo. Cada classe escreve e lê as suas
+ * seções; aqui ficam só as funções que todas usam. A leitura usa Scanner.
  */
 final class ArquivoPartida {
 	static final String CABECALHO = "HERDEIROS_DO_KHAN 1";
@@ -34,7 +30,7 @@ final class ArquivoPartida {
 	private ArquivoPartida() {
 	}
 
-	// --------------------------------------------------------------- escrita
+	// escrita
 
 	static void secao(PrintWriter saida, String nome) {
 		saida.println("[" + nome + "]");
@@ -50,7 +46,6 @@ final class ArquivoPartida {
 		saida.println(texto);
 	}
 
-	/** Junta os itens da lista com vírgula (lista vazia = texto vazio). */
 	static String juntar(List<?> itens) {
 		StringBuilder sb = new StringBuilder();
 		for (Object o : itens) {
@@ -62,45 +57,49 @@ final class ArquivoPartida {
 		return sb.toString();
 	}
 
-	// ---------------------------------------------------------------- leitura
+	// leitura
 
-	/**
-	 * Lê o arquivo inteiro e separa as seções.
-	 *
-	 * @return seção -> (chave -> valor)
-	 * @throws IOException se a leitura falhar ou o arquivo não for de partida
-	 */
+	// Lê o arquivo inteiro e monta seção -> (chave -> valor). Se não for um
+	// arquivo de partida ou der erro de leitura, lança IOException.
 	static Map<String, Map<String, String>> ler(Reader entrada) throws IOException {
-		BufferedReader leitor = new BufferedReader(entrada);
-		String primeira = leitor.readLine();
-		if (primeira == null || !primeira.trim().equals(CABECALHO)) {
-			throw new IOException("O arquivo não é uma partida salva de Herdeiros do Khan");
+		Scanner leitor = new Scanner(entrada);
+		try {
+			String primeira = leitor.hasNextLine() ? leitor.nextLine() : null;
+			if (primeira == null || !primeira.trim().equals(CABECALHO)) {
+				throw new IOException("O arquivo não é uma partida salva de Herdeiros do Khan");
+			}
+			Map<String, Map<String, String>> secoes = new HashMap<String, Map<String, String>>();
+			Map<String, String> atual = null;
+			int numero = 1;
+			while (leitor.hasNextLine()) {
+				String linha = leitor.nextLine();
+				numero++;
+				linha = linha.trim();
+				if (linha.isEmpty() || linha.startsWith("#")) {
+					continue;
+				}
+				if (linha.startsWith("[") && linha.endsWith("]")) {
+					atual = new HashMap<String, String>();
+					secoes.put(linha.substring(1, linha.length() - 1), atual);
+					continue;
+				}
+				int igual = linha.indexOf('=');
+				if (atual == null || igual < 0) {
+					throw new IOException("Linha " + numero + " inválida: " + linha);
+				}
+				atual.put(linha.substring(0, igual).trim(), linha.substring(igual + 1).trim());
+			}
+			// o Scanner não lança IOException, ele guarda o erro e a gente confere aqui
+			if (leitor.ioException() != null) {
+				throw leitor.ioException();
+			}
+			return secoes;
+		} finally {
+			leitor.close();
 		}
-		Map<String, Map<String, String>> secoes = new HashMap<String, Map<String, String>>();
-		Map<String, String> atual = null;
-		String linha;
-		int numero = 1;
-		while ((linha = leitor.readLine()) != null) {
-			numero++;
-			linha = linha.trim();
-			if (linha.isEmpty() || linha.startsWith("#")) {
-				continue;
-			}
-			if (linha.startsWith("[") && linha.endsWith("]")) {
-				atual = new HashMap<String, String>();
-				secoes.put(linha.substring(1, linha.length() - 1), atual);
-				continue;
-			}
-			int igual = linha.indexOf('=');
-			if (atual == null || igual < 0) {
-				throw new IOException("Linha " + numero + " inválida: " + linha);
-			}
-			atual.put(linha.substring(0, igual).trim(), linha.substring(igual + 1).trim());
-		}
-		return secoes;
 	}
 
-	/** A seção pedida; se ela não existir, o arquivo está incompleto. */
+	// se a seção não existe, o arquivo está incompleto
 	static Map<String, String> secaoObrigatoria(Map<String, Map<String, String>> secoes, String nome) {
 		Map<String, String> s = secoes.get(nome);
 		if (s == null) {
@@ -109,7 +108,6 @@ final class ArquivoPartida {
 		return s;
 	}
 
-	/** Valor obrigatório da seção. */
 	static String valor(Map<String, String> secao, String chave) {
 		String v = secao.get(chave);
 		if (v == null) {
@@ -126,7 +124,7 @@ final class ArquivoPartida {
 		}
 	}
 
-	/** Lista separada por vírgula; chave ausente ou vazia = lista vazia. */
+	// chave sem valor (ou que não existe) vira lista vazia
 	static List<String> lista(Map<String, String> secao, String chave) {
 		String v = secao.get(chave);
 		if (v == null || v.isEmpty()) {
@@ -139,7 +137,7 @@ final class ArquivoPartida {
 		return itens;
 	}
 
-	/** Lista de pares "NOME:numero" (ex.: "ESPADA:2,MOEDA:3"). */
+	// Lista de pares "NOME:numero" (ex.: "ESPADA:2,MOEDA:3").
 	static Map<String, Integer> pares(Map<String, String> secao, String chave) {
 		Map<String, Integer> mapa = new HashMap<String, Integer>();
 		for (String item : lista(secao, chave)) {

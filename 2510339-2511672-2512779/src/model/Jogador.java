@@ -9,12 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Um jogador da partida (um herdeiro do Khan).
- *
- * Guarda os recursos que pertencem ao jogador: peças de tributo, yurts ainda
- * não colocados, fichas de ativação, votos no Kurultai e as cartas de
- * conselheiro (secretas e abertas).
+/*
+ * Um jogador (herdeiro do Khan) e o que é dele: tributos, tesouros, yurts
+ * na reserva, votos, peças de bônus, cartas de conselheiro e o tabuleiro.
  */
 class Jogador {
 	static final int YURTS_INICIAIS = 12;
@@ -25,24 +22,23 @@ class Jogador {
 	private final Herdeiro herdeiro;
 
 	private int yurtsDisponiveis = YURTS_INICIAIS;
-	/** Tabuleiro do jogador: colunas, fichas de ativação e melhorias. */
 	private final TabuleiroJogador tabuleiro;
 	private int votos = 0;
 
 	private final Map<TipoTributo, Integer> tributos = new EnumMap<TipoTributo, Integer>(TipoTributo.class);
-	/** Tesouros que o jogador tem e ainda não entregou. */
+	// Tesouros que o jogador tem e ainda não entregou.
 	private final Map<TipoTesouro, Integer> tesouros = new EnumMap<TipoTesouro, Integer>(TipoTesouro.class);
-	/** Peças de bônus recebidas e ainda não usadas. */
+	// Peças de bônus recebidas e ainda não usadas.
 	private final List<TipoBonus> bonusDisponiveis = new ArrayList<TipoBonus>();
-	/** Peças de bônus já usadas (viradas para o verso, pág. 17). */
+	// Peças de bônus já usadas (viradas para o verso, pág. 17).
 	private final List<TipoBonus> bonusUsados = new ArrayList<TipoBonus>();
 
-	/** Cartas secretas recebidas na preparação, ainda não escolhidas (chave = id). */
+	// Cartas secretas recebidas na preparação, ainda não escolhidas (chave = id).
 	private final Map<Integer, CartaConselheiroSecreto> cartasSecretasRecebidas =
 			new HashMap<Integer, CartaConselheiroSecreto>();
-	/** Carta secreta escolhida para ficar até o fim do jogo. */
+	// Carta secreta escolhida para ficar até o fim do jogo.
 	private CartaConselheiroSecreto conselheiroSecreto;
-	/** Cartas de conselheiro aberto cuja demanda o jogador cumpriu (chave = id). */
+	// Cartas de conselheiro aberto cuja demanda o jogador cumpriu (chave = id).
 	private final Map<Integer, CartaConselheiroAberto> cartasAbertasConquistadas =
 			new HashMap<Integer, CartaConselheiroAberto>();
 
@@ -69,7 +65,7 @@ class Jogador {
 		return herdeiro;
 	}
 
-	// ---------------------------------------------------------------- tributos
+	// tributos
 
 	int getQuantidadeTributo(TipoTributo tipo) {
 		return tributos.get(tipo);
@@ -82,12 +78,7 @@ class Jogador {
 		tributos.put(tipo, tributos.get(tipo) + quantidade);
 	}
 
-	/**
-	 * Gasta peças de tributo. Se o jogador não tiver peças suficientes, nada
-	 * é alterado.
-	 *
-	 * @return {@code true} se o gasto foi feito
-	 */
+	// se não tiver o suficiente devolve false e não gasta nada
 	boolean gastarTributo(TipoTributo tipo, int quantidade) {
 		if (tipo == null || quantidade < 0) {
 			throw new IllegalArgumentException("Tributo inválido");
@@ -100,17 +91,13 @@ class Jogador {
 		return true;
 	}
 
-	// ------------------------------------------------------------------- yurts
+	// yurts
 
 	int getYurtsDisponiveis() {
 		return yurtsDisponiveis;
 	}
 
-	/**
-	 * Retira um yurt da reserva do jogador (para ser colocado no tabuleiro).
-	 *
-	 * @return {@code false} se as peças de yurt do jogador acabaram
-	 */
+	// false se os 12 yurts já foram pro mapa
 	boolean retirarYurt() {
 		if (yurtsDisponiveis == 0) {
 			return false;
@@ -119,18 +106,17 @@ class Jogador {
 		return true;
 	}
 
-	// ------------------------------------------------- tabuleiro do jogador
+	// tabuleiro do jogador
 
 	TabuleiroJogador getTabuleiro() {
 		return tabuleiro;
 	}
 
-	/** Fichas de ativação que ainda não estão em nenhuma coluna. */
 	int getFichasAtivacaoDisponiveis() {
 		return tabuleiro.getFichasDisponiveis();
 	}
 
-	// ------------------------------------------------------------------- votos
+	// votos
 
 	int getVotos() {
 		return votos;
@@ -143,13 +129,13 @@ class Jogador {
 		votos += quantidade;
 	}
 
-	// --------------------------------------------------------------- tesouros
+	// tesouros
 
 	int getQuantidadeTesouro(TipoTesouro tipo) {
 		return tesouros.get(tipo);
 	}
 
-	/** Total de tesouros não entregues (critério de desempate, pág. 16). */
+	// Total de tesouros não entregues (critério de desempate, pág. 16).
 	int getTotalTesouros() {
 		int total = 0;
 		for (int n : tesouros.values()) {
@@ -158,7 +144,6 @@ class Jogador {
 		return total;
 	}
 
-	/** Quantos tipos diferentes de tesouro o jogador tem. */
 	int getTiposDeTesouro() {
 		int tipos = 0;
 		for (int n : tesouros.values()) {
@@ -176,11 +161,7 @@ class Jogador {
 		tesouros.put(tipo, tesouros.get(tipo) + quantidade);
 	}
 
-	/**
-	 * Tira tesouros do jogador. Se ele não tiver o suficiente, nada muda.
-	 *
-	 * @return {@code true} se os tesouros foram retirados
-	 */
+	// se não tiver o suficiente devolve false e não tira nada
 	boolean removerTesouro(TipoTesouro tipo, int quantidade) {
 		if (tipo == null || quantidade < 0) {
 			throw new IllegalArgumentException("Tesouro inválido");
@@ -193,7 +174,7 @@ class Jogador {
 		return true;
 	}
 
-	// ---------------------------------------------------------- peças de bônus
+	// peças de bônus
 
 	void receberBonus(TipoBonus bonus) {
 		if (bonus == null) {
@@ -206,16 +187,12 @@ class Jogador {
 		return Collections.unmodifiableList(bonusDisponiveis);
 	}
 
-	/** Todas as peças de bônus que o jogador já recebeu, usadas ou não. */
+	// Todas as peças de bônus que o jogador já recebeu, usadas ou não.
 	int getTotalBonusRecebidos() {
 		return bonusDisponiveis.size() + bonusUsados.size();
 	}
 
-	/**
-	 * Marca uma peça de bônus como usada.
-	 *
-	 * @return {@code false} se o jogador não tem essa peça para usar
-	 */
+	// passa a peça pra lista de usadas; false se ele não tem a peça
 	boolean usarBonus(TipoBonus bonus) {
 		if (!bonusDisponiveis.remove(bonus)) {
 			return false;
@@ -224,9 +201,8 @@ class Jogador {
 		return true;
 	}
 
-	// ------------------------------------------------- cartas de conselheiro
+	// cartas de conselheiro
 
-	/** Recebe uma carta de conselheiro secreto na preparação do jogo. */
 	void receberCartaSecreta(CartaConselheiroSecreto carta) {
 		if (carta == null) {
 			throw new IllegalArgumentException("Carta nula");
@@ -241,12 +217,8 @@ class Jogador {
 		return Collections.unmodifiableCollection(cartasSecretasRecebidas.values());
 	}
 
-	/**
-	 * Escolhe a carta secreta a manter. As demais cartas recebidas saem da
-	 * mão do jogador e são devolvidas para que sejam descartadas.
-	 *
-	 * @return as cartas não escolhidas
-	 */
+	// Fica com uma das cartas secretas; as outras saem da mão e são devolvidas
+	// pra quem chamou descartar.
 	Collection<CartaConselheiroSecreto> escolherConselheiroSecreto(int idCarta) {
 		if (conselheiroSecreto != null) {
 			throw new IllegalStateException("O jogador já escolheu seu conselheiro secreto");
@@ -270,7 +242,7 @@ class Jogador {
 		return conselheiroSecreto != null;
 	}
 
-	/** Recebe uma carta de conselheiro aberto e o voto correspondente. */
+	// carta aberta cumprida vale 1 voto
 	void conquistarCartaAberta(CartaConselheiroAberto carta) {
 		if (carta == null) {
 			throw new IllegalArgumentException("Carta nula");
@@ -283,13 +255,10 @@ class Jogador {
 		return Collections.unmodifiableCollection(cartasAbertasConquistadas.values());
 	}
 
-	// --------------------------------------------- salvar e carregar (4ª it.)
+	// salvar e carregar (4ª it.)
 
-	/**
-	 * Escreve os dados do jogador (recursos, peças de bônus, cartas e o
-	 * tabuleiro dele) na seção {@code [JOGADOR <COR>]}, que quem chama já
-	 * abriu. Só nomes de enum e números, para o arquivo ficar em ASCII.
-	 */
+	// Escreve tudo do jogador na seção [JOGADOR <COR>] (quem chama já abriu a
+	// seção). Só vai nome de enum e número, pro arquivo ficar em ASCII.
 	void salvar(PrintWriter saida) {
 		ArquivoPartida.linha(saida, "herdeiro", herdeiro.name());
 		List<String> lista = new ArrayList<String>();
@@ -323,11 +292,8 @@ class Jogador {
 		tabuleiro.salvar(saida);
 	}
 
-	/**
-	 * Restaura o jogador a partir da sua seção. As cartas são pegas do
-	 * distribuidor da partida, pelo tipo. Os votos vêm direto do arquivo
-	 * (as cartas abertas não dão o voto de novo).
-	 */
+	// Lê de volta a seção do jogador. As cartas vêm do distribuidor, pelo tipo.
+	// Os votos vêm direto do arquivo, então as cartas abertas não dão voto de novo.
 	void carregar(Map<String, String> secao, DistribuidorCartas cartas) {
 		if (!ArquivoPartida.valor(secao, "herdeiro").equals(herdeiro.name())) {
 			throw new IllegalArgumentException("O herdeiro salvo não é o da cor " + cor);

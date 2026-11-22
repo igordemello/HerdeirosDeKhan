@@ -10,20 +10,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Os 7 conselheiros do mapa, guardados por id da parada.
- *
- * Pedidos transcritos do tabuleiro principal (imagem do EAD):
- * <ul>
- * <li>R04: 2 sedas; R11: 2 ferros; P01: 2 peles; P08: 2 especiarias;
- * C05: 2 bois — 1 voto por entrega;</li>
- * <li>C09: 3 tesouros de qualquer tipo — 1 voto por entrega;</li>
- * <li>Karakorum: 1 ferro, 1 pele e 1 boi (pedido impresso no tabuleiro;
- * a peça opcional de Karakorum, pág. 4, não foi usada) — 2 votos por
- * entrega.</li>
- * </ul>
- * Na preparação, as 7 peças de bônus são distribuídas aleatoriamente, uma em
- * cada conselheiro (pág. 4).
+/*
+ * Os 7 conselheiros do mapa, pelo id da parada. Os pedidos a gente copiou
+ * da imagem do tabuleiro:
+ *   R04 2 sedas, R11 2 ferros, P01 2 peles, P08 2 especiarias, C05 2 bois
+ *   (1 voto cada entrega)
+ *   C09 3 tesouros quaisquer (1 voto)
+ *   Karakorum 1 ferro, 1 pele e 1 boi (2 votos). Não usamos a peça opcional
+ *   de Karakorum da pág. 4, vale o que está impresso.
+ * Na preparação cada um recebe uma peça de bônus sorteada (pág. 4).
  */
 class Conselho {
 	static final String ID_KARAKORUM = Tabuleiro.ID_KARAKORUM;
@@ -45,7 +40,6 @@ class Conselho {
 		conselheiros.put(c.getIdParada(), c);
 	}
 
-	/** Distribui as 7 peças de bônus, uma por conselheiro, ao acaso. */
 	void distribuirBonus(Random aleatorio) {
 		List<TipoBonus> pecas = new ArrayList<TipoBonus>(Arrays.asList(TipoBonus.values()));
 		Collections.shuffle(pecas, aleatorio);
@@ -56,7 +50,7 @@ class Conselho {
 		}
 	}
 
-	/** @return o conselheiro da parada, ou {@code null} se ela não tem conselheiro */
+	// null se a parada não tem conselheiro
 	Conselheiro getConselheiro(String idParada) {
 		return conselheiros.get(idParada);
 	}
@@ -65,9 +59,9 @@ class Conselho {
 		return Collections.unmodifiableCollection(conselheiros.values());
 	}
 
-	// --------------------------------------------- salvar e carregar (4ª it.)
+	// salvar e carregar (4ª it.)
 
-	/** Para cada conselheiro: a peça de bônus que ainda está nele e as entregas feitas. */
+	// pra cada conselheiro: o bônus que ainda está nele e quantas entregas teve
 	void salvar(PrintWriter saida) {
 		List<String> ids = new ArrayList<String>(conselheiros.keySet());
 		Collections.sort(ids);

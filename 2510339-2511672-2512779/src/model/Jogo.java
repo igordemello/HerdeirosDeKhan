@@ -16,24 +16,21 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-/**
- * API pública do Model: é a única classe do pacote que o View e o Controller
- * podem usar. Ela junta os jogadores, o tabuleiro e as cartas, e só expõe
- * tipos simples (String, int, boolean), já que as classes do jogo não são
- * públicas. As cores são passadas pelo nome ("AZUL", "VERMELHO", ...).
+/*
+ * Fachada do Model. Fora as interfaces do Observer, é a única classe pública
+ * do pacote, então a View e o Controller só conversam com ela. Como as
+ * classes do jogo não são públicas, aqui só entra e sai String, int e
+ * boolean. As cores vão pelo nome ("AZUL", "VERMELHO", ...).
  *
- * Padrões usados (3ª iteração):
- * <ul>
- * <li>Façade: o View e o Controller só falam com esta classe, que repassa
- * os pedidos para o tabuleiro, os jogadores, as cartas etc.;</li>
- * <li>Singleton: só existe uma partida por vez, criada por
- * {@link #novaPartida(List)} e obtida por {@link #getInstancia()};</li>
- * <li>Observer: a partida é o observado. Toda ação que muda o estado chama
- * {@code mudouEstado()}, que avisa os observadores (a interface gráfica).</li>
- * </ul>
+ * Padrões (3ª iteração):
+ * - Façade: repassa os pedidos pro tabuleiro, jogadores, cartas etc.
+ * - Singleton: uma partida por vez, criada em novaPartida() e pega com
+ *   getInstancia().
+ * - Observer: a partida é o observado. Tudo que muda o estado chama
+ *   mudouEstado(), que avisa a interface gráfica.
  */
 public class Jogo implements ObservadoIF {
-	/** Códigos para {@link #get(int)}. */
+	// códigos do get(int) do Observer
 	public static final int VEZ = 1;
 	public static final int MOVIMENTOS = 2;
 
@@ -41,71 +38,66 @@ public class Jogo implements ObservadoIF {
 
 	private final List<ObservadorIF> observadores = new ArrayList<ObservadorIF>();
 
-	/** Votos da ficha branca que disparam o fim do jogo para 2/3/4/5 jogadores (pág. 14). */
+	// Votos da ficha branca que disparam o fim do jogo para 2/3/4/5 jogadores (pág. 14).
 	private static final int[] VOTOS_PARA_O_FIM = { 10, 14, 16, 17 };
 
 	private final GerenciadorJogadores gerenciador;
 	private final Tabuleiro tabuleiro;
 	private final DistribuidorCartas distribuidor;
 
-	/** Coluna ativada pelo jogador da vez neste turno ({@code null} se nenhuma). */
+	// Coluna ativada pelo jogador da vez neste turno (null se nenhuma).
 	private ColunaJogador colunaAtivadaNaVez = null;
-	/** Movimentos (cavalos) que o jogador da vez tem neste turno. */
+	// Movimentos (cavalos) que o jogador da vez tem neste turno.
 	private int movimentosDaVez = 0;
-	/** Turnos que faltam depois do fim disparado; -1 enquanto ele não foi disparado. */
+	// Turnos que faltam depois do fim disparado; -1 enquanto ele não foi disparado.
 	private int turnosAteOFim = -1;
-	/** Se o jogador da vez já fez alguma jogada neste turno (aí não dá mais para salvar). */
+	// Se o jogador da vez já fez alguma jogada neste turno (aí não dá mais para salvar).
 	private boolean turnoComecou = false;
 
 	// --- melhorias, tesouros, conselheiros e bônus (parte do Rafael) ---
-	/** Preço de uma melhoria, em moedas (pág. 11). */
+	// Preço de uma melhoria, em moedas (pág. 11).
 	private static final int PRECO_MELHORIA = 2;
-	/** Marca, no pedido de um conselheiro, um tesouro de qualquer tipo. */
+	// aparece no pedido do conselheiro que aceita qualquer tesouro
 	public static final String QUALQUER_TESOURO = "QUALQUER";
 
 	private final MercadoMelhorias mercado;
 	private final ReservaTesouros reservaTesouros;
 	private final Conselho conselho = new Conselho();
-	/** Paradas em que o jogador da vez esteve neste turno (para as entregas). */
+	// Paradas em que o jogador da vez esteve neste turno (para as entregas).
 	private final Set<String> paradasVisitadasNaVez = new HashSet<String>();
-	/** Peças de tributo virtuais já usadas neste turno. */
+	// Peças de tributo virtuais já usadas neste turno.
 	private final Map<TipoTributo, Integer> virtuaisUsados = new EnumMap<TipoTributo, Integer>(TipoTributo.class);
-	/** Tesouros virtuais já usados neste turno. */
+	// Tesouros virtuais já usados neste turno.
 	private final List<TipoTesouro> tesourosVirtuaisUsados = new ArrayList<TipoTesouro>();
-	/** Tesouros tirados pelo bônus de 3 tesouros, esperando a escolha. */
+	// Tesouros tirados pelo bônus de 3 tesouros, esperando a escolha.
 	private final List<TipoTesouro> tesourosDoBonusParaEscolher = new ArrayList<TipoTesouro>();
 	private int melhoriasGratisPendentes = 0;
 	private int punhosExtrasDaVez = 0;
-	/** Jogador com a habilidade do Jochi, ou {@code null} se ninguém joga com ele. */
+	// Jogador com a habilidade do Jochi, ou null se ninguém joga com ele.
 	private Jogador jochi = null;
-	/** As 2 melhorias tiradas para o Jochi no início do jogo, esperando a escolha. */
+	// As 2 melhorias tiradas para o Jochi no início do jogo, esperando a escolha.
 	private final List<PecaMelhoria> melhoriasIniciaisDoJochi = new ArrayList<PecaMelhoria>();
 
 	// --- ações no mapa (tributos, yurts, ataques, Khan) ---
 	private static final int TESOUROS_POR_CIDADE = 4;
-	/** Lugar do Khan fora das províncias. */
+	// Lugar do Khan fora das províncias.
 	public static final String KHAN_NA_AREA_DE_MELHORIAS = Tabuleiro.AREA_DE_MELHORIAS;
 	private final TurnoNoMapa turnoNoMapa = new TurnoNoMapa();
 
-	// ------------------------------------------------------------ Singleton
+	// Singleton
 
-	/**
-	 * Cria e prepara uma nova partida (jogadores, tabuleiro e cartas), que
-	 * passa a ser a única instância do jogo.
-	 *
-	 * @param coresEmOrdemDeJogo nomes das cores escolhidas, na ordem de jogo
-	 */
+	// Cria uma partida nova e guarda como a instância única. As cores vêm pelo
+	// nome, na ordem em que vão jogar.
 	public static Jogo novaPartida(List<String> coresEmOrdemDeJogo) {
 		return novaPartida(converterCores(coresEmOrdemDeJogo), FabricaTabuleiro.criarTabuleiroPadrao(), new Random());
 	}
 
-	/** Usado também pelos testes, com um mapa pequeno e semente fixa. */
+	// Usado também pelos testes, com um mapa pequeno e semente fixa.
 	static Jogo novaPartida(List<Cor> cores, Tabuleiro tabuleiro, Random aleatorio) {
 		instancia = new Jogo(cores, tabuleiro, aleatorio);
 		return instancia;
 	}
 
-	/** A partida em andamento. */
 	public static Jogo getInstancia() {
 		if (instancia == null) {
 			throw new IllegalStateException("Nenhuma partida foi criada");
@@ -113,7 +105,7 @@ public class Jogo implements ObservadoIF {
 		return instancia;
 	}
 
-	/** Cores que podem ser escolhidas na janela inicial. */
+	// Cores que podem ser escolhidas na janela inicial.
 	public static List<String> getCoresPossiveis() {
 		List<String> cores = new ArrayList<String>();
 		for (Cor c : Cor.values()) {
@@ -122,12 +114,12 @@ public class Jogo implements ObservadoIF {
 		return cores;
 	}
 
-	/** Herdeiro associado à cor (ex.: "Tolui"), antes mesmo de a partida existir. */
+	// Herdeiro associado à cor (ex.: "Tolui"), antes mesmo de a partida existir.
 	public static String getHerdeiroDaCor(String cor) {
 		return cor(cor).getHerdeiro().getNome();
 	}
 
-	/** Privado (Singleton): toda partida é criada por {@code novaPartida}. */
+	// privado por causa do Singleton
 	private Jogo(List<Cor> cores, Tabuleiro tabuleiro, Random aleatorio) {
 		this.gerenciador = new GerenciadorJogadores(cores);
 		this.tabuleiro = tabuleiro;
@@ -145,13 +137,13 @@ public class Jogo implements ObservadoIF {
 		turnoNoMapa.iniciar(jogadorDaVez(), tabuleiro);
 	}
 
-	// ------------------------------------------------------------------ vez
+	// vez
 
 	public String getJogadorDaVez() {
 		return gerenciador.getJogadorDaVez().getCor().name();
 	}
 
-	/** Cores dos jogadores da partida, na ordem de jogo. */
+	// Cores dos jogadores da partida, na ordem de jogo.
 	public List<String> getCores() {
 		List<String> cores = new ArrayList<String>();
 		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
@@ -160,7 +152,7 @@ public class Jogo implements ObservadoIF {
 		return cores;
 	}
 
-	/** Passa a vez e retorna a cor do próximo jogador. */
+	// Passa a vez e retorna a cor do próximo jogador.
 	public String passarVez() {
 		encerrarTurnoDaVez();
 		contarTurnosAteOFim();
@@ -173,10 +165,8 @@ public class Jogo implements ObservadoIF {
 		return proximo.getCor().name();
 	}
 
-	/**
-	 * Fim de jogo (pág. 14): quando ele é disparado, a rodada atual termina e
-	 * todos jogam mais uma vez. Chamado no fim do turno, antes de passar a vez.
-	 */
+	// Fim de jogo (pág. 14): quando ele é disparado, a rodada atual termina e
+	// todos jogam mais uma vez. Chamado no fim do turno, antes de passar a vez.
 	private void contarTurnosAteOFim() {
 		if (turnosAteOFim < 0 && fimDeJogoDisparado()) {
 			int n = gerenciador.getNumeroDeJogadores();
@@ -186,19 +176,19 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
-	/** Turnos que ainda faltam até o fim da partida, ou -1 se o fim não foi disparado. */
+	// Turnos que ainda faltam até o fim da partida, ou -1 se o fim não foi disparado.
 	public int getTurnosAteOFim() {
 		return turnosAteOFim;
 	}
 
-	/** Se a última rodada já foi jogada: é hora de mostrar o resultado. */
+	// Se a última rodada já foi jogada: é hora de mostrar o resultado.
 	public boolean partidaAcabou() {
 		return turnosAteOFim == 0;
 	}
 
-	// ------------------------------------------------- tabuleiro do jogador
+	// tabuleiro do jogador
 
-	/** Nomes das colunas do tabuleiro do jogador, da esquerda para a direita (VERMELHA, VERDE, AMARELA, BRANCA). */
+	// VERMELHA, VERDE, AMARELA e BRANCA, da esquerda pra direita
 	public List<String> getColunas() {
 		List<String> nomes = new ArrayList<String>();
 		for (ColunaJogador c : ColunaJogador.values()) {
@@ -207,12 +197,11 @@ public class Jogo implements ObservadoIF {
 		return nomes;
 	}
 
-	/** Herdeiro do jogador da cor dada (ex.: "Tolui"); usado pela View para achar a imagem. */
+	// Herdeiro do jogador da cor dada (ex.: "Tolui"); usado pela View para achar a imagem.
 	public String getHerdeiro(String cor) {
 		return jogador(cor).getHerdeiro().getNome();
 	}
 
-	/** Se a coluna do jogador tem uma ficha de ativação colocada. */
 	public boolean colunaOcupada(String cor, String coluna) {
 		return jogador(cor).getTabuleiro().colunaOcupada(coluna(coluna));
 	}
@@ -221,17 +210,17 @@ public class Jogo implements ObservadoIF {
 		return jogador(cor).getFichasAtivacaoDisponiveis();
 	}
 
-	/** Cavalos da coluna (base + melhorias) = movimentos se ela for ativada. */
+	// Cavalos da coluna (base + melhorias) = movimentos se ela for ativada.
 	public int getCavalosDaColuna(String cor, String coluna) {
 		return jogador(cor).getTabuleiro().getCavalos(coluna(coluna));
 	}
 
-	/** Punhos da coluna (base + melhorias) = peças de tributo que podem ser pegas. */
+	// Punhos da coluna (base + melhorias) = peças de tributo que podem ser pegas.
 	public int getPunhosDaColuna(String cor, String coluna) {
 		return jogador(cor).getTabuleiro().getPunhos(coluna(coluna));
 	}
 
-	/** Melhorias da coluna, da mais baixa para a mais alta (ex.: "DOIS_CAVALOS"). */
+	// Melhorias da coluna, da mais baixa para a mais alta (ex.: "DOIS_CAVALOS").
 	public List<String> getMelhoriasDaColuna(String cor, String coluna) {
 		List<String> nomes = new ArrayList<String>();
 		for (PecaMelhoria m : jogador(cor).getTabuleiro().getMelhorias(coluna(coluna))) {
@@ -240,10 +229,8 @@ public class Jogo implements ObservadoIF {
 		return nomes;
 	}
 
-	/**
-	 * Ids das peças de melhoria da coluna, da mais baixa para a mais alta
-	 * (ex.: "CAV-V"). A View usa o id para achar a imagem da peça.
-	 */
+	// Ids das peças de melhoria da coluna, da mais baixa para a mais alta
+	// (ex.: "CAV-V"). A View usa o id para achar a imagem da peça.
 	public List<String> getIdsDasMelhoriasDaColuna(String cor, String coluna) {
 		List<String> ids = new ArrayList<String>();
 		for (PecaMelhoria m : jogador(cor).getTabuleiro().getMelhorias(coluna(coluna))) {
@@ -252,33 +239,25 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/** Se a coluna do tabuleiro do jogador tem o ícone do Khan (usar o Khan é obrigatório). */
+	// Se a coluna do tabuleiro do jogador tem o ícone do Khan (usar o Khan é obrigatório).
 	public boolean colunaUsaKhan(String cor, String coluna) {
 		return jogador(cor).getTabuleiro().usaKhan(coluna(coluna));
 	}
 
-	/** Moedas virtuais impressas na base da coluna do tabuleiro do jogador. */
+	// Moedas virtuais impressas na base da coluna do tabuleiro do jogador.
 	public int getMoedasVirtuaisDaColuna(String cor, String coluna) {
 		return jogador(cor).getTabuleiro().getAcoesIniciais(coluna(coluna)).getMoedasVirtuais();
 	}
 
-	/**
-	 * Se o jogador da vez pode ativar a coluna agora: ele ainda não ativou
-	 * nenhuma coluna neste turno e a coluna está livre.
-	 */
+	// só dá pra ativar uma coluna por turno, e ela tem que estar livre
 	public boolean podeAtivarColuna(String coluna) {
 		return colunaAtivadaNaVez == null
 				&& gerenciador.getJogadorDaVez().getTabuleiro().podeAtivar(coluna(coluna));
 	}
 
-	/**
-	 * O jogador da vez coloca uma ficha de ativação na coluna (pág. 6). O
-	 * número de movimentos do turno passa a ser o número de cavalos da
-	 * coluna. A coluna branca devolve todas as fichas (pág. 9).
-	 *
-	 * @return {@code false} se ele já ativou uma coluna neste turno ou se a
-	 *         coluna está ocupada (nada é alterado)
-	 */
+	// Coloca a ficha de ativação na coluna (pág. 6) e os movimentos do turno
+	// passam a ser os cavalos dela. A branca devolve todas as fichas (pág. 9).
+	// Se não puder ativar, devolve false e não muda nada.
 	public boolean ativarColuna(String coluna) {
 		ColunaJogador c = coluna(coluna);
 		if (!podeAtivarColuna(coluna)) {
@@ -292,20 +271,18 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	/** Coluna ativada neste turno, ou {@code null} se nenhuma foi ativada. */
+	// null enquanto ele não ativa nenhuma
 	public String getColunaAtivadaNaVez() {
 		return colunaAtivadaNaVez == null ? null : colunaAtivadaNaVez.name();
 	}
 
-	/** Movimentos do jogador da vez neste turno (o equivalente aos dados). */
+	// Movimentos do jogador da vez neste turno (o equivalente aos dados).
 	public int getMovimentosDaVez() {
 		return movimentosDaVez;
 	}
 
-	/**
-	 * Define à mão os movimentos do turno, para testes (como escolher o valor
-	 * dos dados no enunciado).
-	 */
+	// Usado pelo combo de teste da área lateral. É o equivalente a escolher o
+	// valor dos dados que o enunciado pede.
 	public void definirMovimentosDaVez(int movimentos) {
 		if (movimentos < 0) {
 			throw new IllegalArgumentException("Movimentos negativos: " + movimentos);
@@ -314,16 +291,11 @@ public class Jogo implements ObservadoIF {
 		mudouEstado();
 	}
 
-	// ------------------------------------------------------------ movimento
+	// movimento
 
-	/**
-	 * Move um peão do jogador pelo caminho dado (pág. 7).
-	 *
-	 * @param numeroPeao 1 (Altani também tem o peão 2)
-	 * @param caminho    ids das paradas percorridas; a última é o destino
-	 * @param movimentos movimentos (cavalos) que o jogador tem neste turno
-	 * @return {@code false} se o movimento não respeita as regras
-	 */
+	// Move o peão pelo caminho dado (pág. 7). O caminho não tem a parada de
+	// onde ele sai e termina no destino. numeroPeao é 1, ou 2 no segundo peão
+	// da Altani. Devolve false se o caminho não vale.
 	public boolean moverPeao(String cor, int numeroPeao, List<String> caminho, int movimentos) {
 		boolean moveu = tabuleiro.moverPeao(new Peao(cor(cor), numeroPeao), caminho, movimentos);
 		if (moveu) {
@@ -332,16 +304,9 @@ public class Jogo implements ObservadoIF {
 		return moveu;
 	}
 
-	/**
-	 * Move um peão até a parada clicada; o caminho é procurado pelo Model
-	 * (ver {@link Tabuleiro#moverPeaoAte}).
-	 *
-	 * @param idDestino  id da parada clicada (ex.: "R05", "KARAKORUM")
-	 * @param movimentos movimentos (cavalos) disponíveis
-	 * @return ids das paradas em que o peão esteve, da origem ao destino (sem
-	 *         os yurts próprios pulados); lista vazia se o movimento não é
-	 *         possível, e nesse caso nada muda
-	 */
+	// Igual ao de cima, mas só com o destino: o caminho quem acha é o
+	// Tabuleiro.moverPeaoAte. Devolve as paradas por onde o peão passou (sem
+	// os yurts próprios que ele pulou) ou lista vazia se não der.
 	public List<String> moverPeaoAte(String cor, int numeroPeao, String idDestino, int movimentos) {
 		List<String> visitadas = tabuleiro.moverPeaoAte(new Peao(cor(cor), numeroPeao), idDestino, movimentos);
 		if (!visitadas.isEmpty()) {
@@ -350,18 +315,13 @@ public class Jogo implements ObservadoIF {
 		return visitadas;
 	}
 
-	/** Se o peão consegue chegar à parada com esses movimentos (nada muda). */
+	// Se o peão consegue chegar à parada com esses movimentos (nada muda).
 	public boolean podeMoverPeaoAte(String cor, int numeroPeao, String idDestino, int movimentos) {
 		return tabuleiro.podeMoverPeaoAte(new Peao(cor(cor), numeroPeao), idDestino, movimentos);
 	}
 
-	/**
-	 * Move um peão do jogador da vez até a parada clicada, usando os
-	 * movimentos do turno ({@link #getMovimentosDaVez()}). Os movimentos
-	 * gastos são descontados: quem visitou n paradas além da origem gastou n.
-	 *
-	 * @return ids das paradas em que o peão esteve; lista vazia se não é possível
-	 */
+	// É o que o clique no tabuleiro chama. Move o peão da vez e desconta os
+	// movimentos: cada parada visitada depois da origem gasta um.
 	public List<String> moverPeaoDaVezAte(int numeroPeao, String idDestino) {
 		if (!turnoNoMapa.podeUsarPeao(numeroPeao)) {
 			return new ArrayList<String>(); // Altani já usou o outro peão neste turno
@@ -378,18 +338,17 @@ public class Jogo implements ObservadoIF {
 		return visitadas;
 	}
 
-	/** Id da parada onde está o peão (para a View desenhá-lo), ou {@code null}. */
+	// Id da parada onde está o peão (para a View desenhá-lo), ou null.
 	public String getParadaDoPeao(String cor, int numeroPeao) {
 		Parada parada = tabuleiro.getParadaDoPeao(new Peao(cor(cor), numeroPeao));
 		return parada == null ? null : parada.getId();
 	}
 
-	/** Quantos peões o jogador tem (Altani tem 2). */
+	// Quantos peões o jogador tem (Altani tem 2).
 	public int getNumeroDePeoes(String cor) {
 		return cor(cor).getHerdeiro().getNumeroDePeoes();
 	}
 
-	/** Ids de todas as paradas do mapa. */
 	public List<String> getParadas() {
 		List<String> ids = new ArrayList<String>();
 		for (Parada parada : tabuleiro.getParadas()) {
@@ -398,24 +357,21 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	// =====================================================================
 	// Tabuleiro do jogador, melhorias, tesouros, conselheiros e cartas
 	// (parte do Rafael na 3ª iteração)
-	// =====================================================================
 
-	// ------------------------------------------------ recursos do jogador
+	// recursos do jogador
 
-	/** Votos do jogador na trilha do Kurultai. */
 	public int getVotos(String cor) {
 		return jogador(cor).getVotos();
 	}
 
-	/** Peças de tributo que o jogador tem ("ESPADA", "YURT" ou "MOEDA"). */
+	// Peças de tributo que o jogador tem ("ESPADA", "YURT" ou "MOEDA").
 	public int getTributo(String cor, String tipo) {
 		return jogador(cor).getQuantidadeTributo(TipoTributo.valueOf(tipo));
 	}
 
-	/** Tipos de tesouro, na ordem em que a View deve mostrá-los. */
+	// Tipos de tesouro, na ordem em que a View deve mostrá-los.
 	public List<String> getTiposDeTesouro() {
 		List<String> tipos = new ArrayList<String>();
 		for (TipoTesouro t : TipoTesouro.values()) {
@@ -428,31 +384,24 @@ public class Jogo implements ObservadoIF {
 		return jogador(cor).getQuantidadeTesouro(TipoTesouro.valueOf(tipo));
 	}
 
-	/** Tesouros ainda não entregues (desempate do vencedor, pág. 16). */
+	// Tesouros ainda não entregues (desempate do vencedor, pág. 16).
 	public int getTotalTesouros(String cor) {
 		return jogador(cor).getTotalTesouros();
 	}
 
-	/** Yurts que o jogador ainda tem na reserva. */
 	public int getYurtsNaReserva(String cor) {
 		return jogador(cor).getYurtsDisponiveis();
 	}
 
-	/**
-	 * Peças de tributo do tipo que o jogador da vez pode gastar agora: as
-	 * reais mais as virtuais da coluna ativada que ainda não foram usadas
-	 * neste turno (pág. 16). As ações de atacar e construir também devem usar
-	 * este método e {@link #gastarTributoDaVez}.
-	 */
+	// Peças reais + as virtuais da coluna ativada que ainda não foram usadas
+	// no turno (pág. 16). Atacar e construir olham isso pra ver se dá pra pagar.
 	public int getTributoDisponivelDaVez(String tipo) {
 		TipoTributo t = TipoTributo.valueOf(tipo);
 		return jogadorDaVez().getQuantidadeTributo(t) + virtuaisRestantes(t);
 	}
 
-	/**
-	 * Gasta peças de tributo do jogador da vez, usando primeiro as virtuais
-	 * da coluna ativada. Se não houver o suficiente, nada muda.
-	 */
+	// Gasta peças de tributo do jogador da vez, usando primeiro as virtuais
+	// da coluna ativada. Se não houver o suficiente, nada muda.
 	public boolean gastarTributoDaVez(String tipo, int quantidade) {
 		boolean gastou = gastarTributo(TipoTributo.valueOf(tipo), quantidade);
 		if (gastou) {
@@ -482,7 +431,7 @@ public class Jogo implements ObservadoIF {
 		return Math.max(0, total - virtuaisUsados.get(tipo));
 	}
 
-	/** Tesouros virtuais da coluna ativada ainda não usados neste turno. */
+	// Tesouros virtuais da coluna ativada ainda não usados neste turno.
 	private List<TipoTesouro> tesourosVirtuaisRestantes() {
 		List<TipoTesouro> restantes = new ArrayList<TipoTesouro>();
 		if (colunaAtivadaNaVez != null) {
@@ -494,7 +443,6 @@ public class Jogo implements ObservadoIF {
 		return restantes;
 	}
 
-	/** Nomes dos tesouros virtuais que o jogador da vez ainda pode usar neste turno. */
 	public List<String> getTesourosVirtuaisDaVez() {
 		List<String> nomes = new ArrayList<String>();
 		for (TipoTesouro t : tesourosVirtuaisRestantes()) {
@@ -503,12 +451,12 @@ public class Jogo implements ObservadoIF {
 		return nomes;
 	}
 
-	/** Ações extras de pegar tributo dadas por peças de bônus neste turno. */
+	// Ações extras de pegar tributo dadas por peças de bônus neste turno.
 	public int getPunhosExtrasDaVez() {
 		return punhosExtrasDaVez;
 	}
 
-	/** Gasta uma ação extra de pegar tributo (para a ação de pegar tributos). */
+	// gasta um dos punhos extras que vieram de bônus
 	public boolean usarPunhoExtraDaVez() {
 		if (punhosExtrasDaVez == 0) {
 			return false;
@@ -518,9 +466,9 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	// ------------------------------------------------------------ melhorias
+	// melhorias
 
-	/** Ids das melhorias viradas para cima (ex.: "CAV-V"), da esquerda para a direita. */
+	// Ids das melhorias viradas para cima (ex.: "CAV-V"), da esquerda para a direita.
 	public List<String> getMelhoriasDisponiveis() {
 		List<String> ids = new ArrayList<String>();
 		for (PecaMelhoria m : mercado.getDisponiveis()) {
@@ -529,36 +477,25 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/** Peças na pilha de melhorias (compra às cegas). */
+	// Peças na pilha de melhorias (compra às cegas).
 	public int getTamanhoPilhaMelhorias() {
 		return mercado.getTamanhoDaPilha();
 	}
 
-	/** Preço de uma melhoria, em moedas (pág. 11). */
 	public int getPrecoMelhoria() {
 		return PRECO_MELHORIA;
 	}
 
-	/**
-	 * Se o jogador da vez pode comprar a melhoria: tem 2 moedas (contando as
-	 * virtuais), não tem melhoria grátis para escolher antes e a coluna da cor
-	 * da peça tem espaço.
-	 *
-	 * @param indice posição em {@link #getMelhoriasDisponiveis()}, ou -1 para
-	 *               comprar a do topo da pilha (aleatória)
-	 */
+	// Precisa de 2 moedas (as virtuais contam), não pode ter melhoria grátis
+	// esperando escolha e a coluna da cor da peça tem que ter espaço.
+	// indice = posição em getMelhoriasDisponiveis(), ou -1 pra comprar a do
+	// topo da pilha (às cegas).
 	public boolean podeComprarMelhoria(int indice) {
 		return podeComprarMelhoria(indice, null);
 	}
 
-	/**
-	 * Como {@link #podeComprarMelhoria(int)}, escolhendo a coluna onde a peça
-	 * vai ficar. Só o Jochi pode pôr a peça numa coluna de outra cor; para os
-	 * outros a coluna tem de ser a da cor da peça.
-	 *
-	 * @param coluna coluna colorida de destino, ou {@code null} para a coluna
-	 *               da cor da peça
-	 */
+	// Mesma coisa escolhendo a coluna. Só o Jochi pode usar coluna de outra
+	// cor; coluna == null quer dizer a coluna da cor da peça.
 	public boolean podeComprarMelhoria(int indice, String coluna) {
 		if (melhoriasGratisPendentes > 0 || getTributoDisponivelDaVez("MOEDA") < PRECO_MELHORIA
 				|| jogadorDaVez() == jochi && !melhoriasIniciaisDoJochi.isEmpty()) {
@@ -585,25 +522,15 @@ public class Jogo implements ObservadoIF {
 		return peca != null && destinoDaMelhoria(peca, coluna) != null;
 	}
 
-	/**
-	 * Compra uma melhoria com 2 moedas e a coloca na coluna da cor dela
-	 * (pág. 11). Se a compra completar uma linha de 3 melhorias, o jogador
-	 * ganha uma melhoria grátis para a coluna branca, escolhida depois com
-	 * {@link #escolherMelhoriaGratis(int)}. A melhoria comprada só vale a
-	 * partir do próximo turno.
-	 *
-	 * @param indice posição em {@link #getMelhoriasDisponiveis()}, ou -1 para o topo da pilha
-	 * @return {@code false} se a compra não é possível (nada muda); se a peça
-	 *         do topo não couber no tabuleiro, ela volta para o fundo da pilha
-	 */
+	// Compra com 2 moedas e põe na coluna da cor da peça (pág. 11). Se fechar
+	// uma linha de 3, ganha uma melhoria grátis pra coluna branca, que ele
+	// escolhe depois em escolherMelhoriaGratis. A peça comprada só vale a
+	// partir do próximo turno. Se a do topo da pilha não couber, volta pro fundo.
 	public boolean comprarMelhoria(int indice) {
 		return comprarMelhoria(indice, null);
 	}
 
-	/**
-	 * Compra uma melhoria e a coloca na coluna escolhida (habilidade do
-	 * Jochi). Com {@code coluna == null} é igual a {@link #comprarMelhoria(int)}.
-	 */
+	// versão com a coluna escolhida (habilidade do Jochi)
 	public boolean comprarMelhoria(int indice, String coluna) {
 		if (!podeComprarMelhoria(indice, coluna)) {
 			return false;
@@ -623,16 +550,14 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	/** Se o jogador da vez pode pôr as melhorias em colunas de outra cor (Jochi). */
+	// Se o jogador da vez pode pôr as melhorias em colunas de outra cor (Jochi).
 	public boolean jogadorDaVezIgnoraCorDasMelhorias() {
 		return jogadorDaVez().getHerdeiro().ignoraCorDasMelhorias();
 	}
 
-	/**
-	 * Coluna onde a peça vai ficar, ou {@code null} se ela não cabe. Sem
-	 * coluna escolhida, vai para a da cor dela; o Jochi, se essa estiver
-	 * cheia, usa a primeira coluna colorida com espaço.
-	 */
+	// Coluna onde a peça vai ficar, ou null se ela não cabe. Sem
+	// coluna escolhida, vai para a da cor dela; o Jochi, se essa estiver
+	// cheia, usa a primeira coluna colorida com espaço.
 	private ColunaJogador destinoDaMelhoria(PecaMelhoria peca, String coluna) {
 		TabuleiroJogador tab = jogadorDaVez().getTabuleiro();
 		boolean qualquerCor = tab.getHerdeiro().ignoraCorDasMelhorias();
@@ -654,28 +579,22 @@ public class Jogo implements ObservadoIF {
 		return null;
 	}
 
-	/**
-	 * Cada linha completa dá uma peça na coluna branca (pág. 12). As grátis
-	 * pendentes são as linhas completas que ainda não têm a sua peça na
-	 * branca. Assim o Jochi, que já começa com uma peça na branca, não ganha
-	 * nada pela primeira linha (o espaço dela já está ocupado).
-	 */
+	// Cada linha completa dá uma peça na coluna branca (pág. 12). As grátis
+	// pendentes são as linhas completas que ainda não têm a sua peça na
+	// branca. Assim o Jochi, que já começa com uma peça na branca, não ganha
+	// nada pela primeira linha (o espaço dela já está ocupado).
 	private void atualizarMelhoriasGratis(TabuleiroJogador tab) {
 		int naBranca = tab.getMelhorias(ColunaJogador.BRANCA).size();
 		melhoriasGratisPendentes = Math.max(0, tab.getLinhasCompletas() - naBranca);
 	}
 
-	/** Melhorias grátis que o jogador da vez ainda precisa escolher para a coluna branca. */
+	// Melhorias grátis que o jogador da vez ainda precisa escolher para a coluna branca.
 	public int getMelhoriasGratisPendentes() {
 		return melhoriasGratisPendentes;
 	}
 
-	/**
-	 * Escolhe a melhoria grátis ganha ao completar uma linha e a coloca na
-	 * coluna branca, que aceita qualquer cor (pág. 12).
-	 *
-	 * @param indice posição em {@link #getMelhoriasDisponiveis()}, ou -1 para o topo da pilha
-	 */
+	// Põe a melhoria grátis na coluna branca, que aceita qualquer cor (pág. 12).
+	// O indice funciona igual ao da compra (-1 = topo da pilha).
 	public boolean escolherMelhoriaGratis(int indice) {
 		if (melhoriasGratisPendentes == 0) {
 			return false;
@@ -699,19 +618,17 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	/**
-	 * Renova as melhorias disponíveis (quando o Khan é colocado na área de
-	 * melhorias): as viradas para cima vão para o fundo da pilha e 5 novas
-	 * são reveladas.
-	 */
+	// Renova as melhorias disponíveis (quando o Khan é colocado na área de
+	// melhorias): as viradas para cima vão para o fundo da pilha e 5 novas
+	// são reveladas.
 	public void renovarMelhorias() {
 		mercado.renovar();
 		mudouEstado();
 	}
 
-	// ------------------------------------------------------- conselheiros
+	// conselheiros
 
-	/** Ids das paradas com conselheiro (as 6 duplas e Karakorum). */
+	// Ids das paradas com conselheiro (as 6 duplas e Karakorum).
 	public List<String> getConselheiros() {
 		List<String> ids = new ArrayList<String>();
 		for (Conselheiro c : conselho.getConselheiros()) {
@@ -721,11 +638,9 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/**
-	 * Tesouros que o conselheiro pede numa entrega (ex.: ["SEDA", "SEDA"]).
-	 * Para o conselheiro que aceita qualquer tipo, a lista traz "QUALQUER"
-	 * uma vez para cada tesouro pedido.
-	 */
+	// Tesouros que o conselheiro pede numa entrega (ex.: ["SEDA", "SEDA"]).
+	// Para o conselheiro que aceita qualquer tipo, a lista traz "QUALQUER"
+	// uma vez para cada tesouro pedido.
 	public List<String> getPedidoDoConselheiro(String idParada) {
 		Conselheiro c = conselheiro(idParada);
 		List<String> pedido = new ArrayList<String>();
@@ -747,16 +662,14 @@ public class Jogo implements ObservadoIF {
 		return conselheiro(idParada).getVotosPorEntrega();
 	}
 
-	/** Peça de bônus que ainda está sobre o conselheiro, ou {@code null}. */
+	// Peça de bônus que ainda está sobre o conselheiro, ou null.
 	public String getBonusDoConselheiro(String idParada) {
 		TipoBonus b = conselheiro(idParada).getBonus();
 		return b == null ? null : b.name();
 	}
 
-	/**
-	 * Conselheiros em que o jogador da vez fez uma parada neste turno e
-	 * portanto pode fazer entregas (pág. 12).
-	 */
+	// Conselheiros em que o jogador da vez fez uma parada neste turno e
+	// portanto pode fazer entregas (pág. 12).
 	public List<String> getConselheirosAlcancaveis() {
 		List<String> ids = new ArrayList<String>();
 		for (String id : getConselheiros()) {
@@ -767,23 +680,16 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/**
-	 * Se o jogador da vez pode entregar estes tesouros ao conselheiro: fez
-	 * parada nele neste turno, a lista é exatamente o pedido do conselheiro e
-	 * ele tem os tesouros (os virtuais da coluna ativada também valem, um
-	 * tesouro virtual por peça e por turno).
-	 */
+	// Se o jogador da vez pode entregar estes tesouros ao conselheiro: fez
+	// parada nele neste turno, a lista é exatamente o pedido do conselheiro e
+	// ele tem os tesouros (os virtuais da coluna ativada também valem, um
+	// tesouro virtual por peça e por turno).
 	public boolean podeEntregar(String idParada, List<String> tesouros) {
 		return planejarEntrega(idParada, tesouros) != null;
 	}
 
-	/**
-	 * Entrega os tesouros ao conselheiro: o jogador ganha os votos da entrega
-	 * e, se for a primeira entrega a esse conselheiro, a peça de bônus que
-	 * está sobre ele (págs. 12-13 e 17).
-	 *
-	 * @return {@code false} se a entrega não é possível (nada muda)
-	 */
+	// Entrega os tesouros: o jogador ganha os votos e, se for a primeira entrega
+	// a esse conselheiro, leva a peça de bônus que está nele (págs. 12-13 e 17).
 	public boolean entregar(String idParada, List<String> tesouros) {
 		List<TipoTesouro> virtuais = planejarEntrega(idParada, tesouros);
 		if (virtuais == null) {
@@ -804,17 +710,20 @@ public class Jogo implements ObservadoIF {
 		TipoBonus bonus = c.registrarEntrega();
 		if (bonus != null) {
 			j.receberBonus(bonus);
+			if (bonus == TipoBonus.VOTO) {
+				// pela regra (pág. 17) o voto é na hora, não fica guardado
+				j.usarBonus(bonus);
+				j.ganharVotos(1);
+			}
 		}
 		verificarCartasAbertas();
 		mudouEstado();
 		return true;
 	}
 
-	/**
-	 * Uma entrega possível para o conselheiro com os tesouros que o jogador
-	 * da vez tem, ou lista vazia se não há nenhuma. Para o conselheiro que
-	 * aceita qualquer tipo, usa primeiro os tesouros que o jogador tem mais.
-	 */
+	// Uma entrega possível para o conselheiro com os tesouros que o jogador
+	// da vez tem, ou lista vazia se não há nenhuma. Para o conselheiro que
+	// aceita qualquer tipo, usa primeiro os tesouros que o jogador tem mais.
 	public List<String> sugerirEntrega(String idParada) {
 		Conselheiro c = conselheiro(idParada);
 		List<String> sugestao = new ArrayList<String>();
@@ -839,7 +748,7 @@ public class Jogo implements ObservadoIF {
 		return podeEntregar(idParada, sugestao) ? sugestao : new ArrayList<String>();
 	}
 
-	/** Reais + virtuais da vez, por tipo. */
+	// Reais + virtuais da vez, por tipo.
 	private Map<TipoTesouro, Integer> tesourosDisponiveisDaVez() {
 		Map<TipoTesouro, Integer> m = new EnumMap<TipoTesouro, Integer>(TipoTesouro.class);
 		for (TipoTesouro t : TipoTesouro.values()) {
@@ -851,12 +760,8 @@ public class Jogo implements ObservadoIF {
 		return m;
 	}
 
-	/**
-	 * Confere uma entrega e decide quais tesouros virtuais ela usa (os
-	 * virtuais só entram quando faltam tesouros reais).
-	 *
-	 * @return os virtuais usados, ou {@code null} se a entrega não é possível
-	 */
+	// Confere a entrega e decide quais tesouros virtuais ela usa (só entram
+	// virtuais quando faltam reais). Devolve os virtuais, ou null se não vale.
 	private List<TipoTesouro> planejarEntrega(String idParada, List<String> nomes) {
 		Conselheiro c = conselho.getConselheiro(idParada);
 		if (c == null || nomes == null || !fezParadaNoConselheiro(idParada)) {
@@ -915,9 +820,9 @@ public class Jogo implements ObservadoIF {
 		return lista;
 	}
 
-	// ------------------------------------------------------- peças de bônus
+	// peças de bônus
 
-	/** Peças de bônus que o jogador tem e ainda não usou (ex.: "DUAS_ESPADAS"). */
+	// Peças de bônus que o jogador tem e ainda não usou (ex.: "DUAS_ESPADAS").
 	public List<String> getBonusDisponiveis(String cor) {
 		List<String> nomes = new ArrayList<String>();
 		for (TipoBonus b : jogador(cor).getBonusDisponiveis()) {
@@ -930,14 +835,8 @@ public class Jogo implements ObservadoIF {
 		return TipoBonus.valueOf(tipo).getDescricao();
 	}
 
-	/**
-	 * O jogador da vez usa uma peça de bônus (pág. 17). A de 3 tesouros tira
-	 * 3 tesouros da pilha; o jogador escolhe 1 com
-	 * {@link #escolherTesouroDoBonus(String)}.
-	 *
-	 * @return {@code false} se ele não tem a peça ou ainda precisa escolher o
-	 *         tesouro de um bônus anterior
-	 */
+	// Usa uma peça de bônus (pág. 17). A de 3 tesouros só tira os tesouros da
+	// pilha; o jogador escolhe um depois em escolherTesouroDoBonus.
 	public boolean usarBonus(String tipo) {
 		TipoBonus b = TipoBonus.valueOf(tipo);
 		Jogador j = jogadorDaVez();
@@ -975,7 +874,7 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	/** Tesouros tirados pelo bônus de 3 tesouros, esperando a escolha do jogador. */
+	// Tesouros tirados pelo bônus de 3 tesouros, esperando a escolha do jogador.
 	public List<String> getTesourosDoBonusParaEscolher() {
 		List<String> nomes = new ArrayList<String>();
 		for (TipoTesouro t : tesourosDoBonusParaEscolher) {
@@ -984,7 +883,7 @@ public class Jogo implements ObservadoIF {
 		return nomes;
 	}
 
-	/** Fica com um dos tesouros do bônus; os outros são descartados (pág. 17). */
+	// Fica com um dos tesouros do bônus; os outros são descartados (pág. 17).
 	public boolean escolherTesouroDoBonus(String tipo) {
 		TipoTesouro t = TipoTesouro.valueOf(tipo);
 		if (!tesourosDoBonusParaEscolher.contains(t)) {
@@ -997,9 +896,9 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	// ----------------------------------------------- cartas de conselheiro
+	// cartas de conselheiro
 
-	/** As 2 cartas secretas que o jogador recebeu e ainda não escolheu (ex.: "VIAJANTE"). */
+	// As 2 cartas secretas que o jogador recebeu e ainda não escolheu (ex.: "VIAJANTE").
 	public List<String> getCartasSecretasParaEscolher(String cor) {
 		List<String> nomes = new ArrayList<String>();
 		for (CartaConselheiroSecreto c : jogador(cor).getCartasSecretasRecebidas()) {
@@ -1009,7 +908,7 @@ public class Jogo implements ObservadoIF {
 		return nomes;
 	}
 
-	/** O jogador fica com uma das 2 cartas secretas e descarta a outra (pág. 6). */
+	// O jogador fica com uma das 2 cartas secretas e descarta a outra (pág. 6).
 	public void escolherConselheiroSecreto(String cor, String tipo) {
 		Jogador j = jogador(cor);
 		TipoConselheiroSecreto t = TipoConselheiroSecreto.valueOf(tipo);
@@ -1023,12 +922,11 @@ public class Jogo implements ObservadoIF {
 		throw new IllegalArgumentException("O jogador " + cor + " não tem a carta " + tipo);
 	}
 
-	/** Se todos os jogadores já escolheram o conselheiro secreto. */
 	public boolean todosEscolheramConselheiroSecreto() {
 		return distribuidor.todosEscolheramConselheiroSecreto(gerenciador.getJogadoresEmOrdem());
 	}
 
-	/** Conselheiro secreto escolhido pelo jogador, ou {@code null}. */
+	// Conselheiro secreto escolhido pelo jogador, ou null.
 	public String getConselheiroSecreto(String cor) {
 		CartaConselheiroSecreto c = jogador(cor).getConselheiroSecreto();
 		return c == null ? null : c.getTipo().name();
@@ -1042,7 +940,7 @@ public class Jogo implements ObservadoIF {
 		return TipoConselheiroSecreto.valueOf(tipo).getDescricao();
 	}
 
-	/** Os 3 limiares da carta secreta (quantidade para 1, 2 e 3 votos). */
+	// Os 3 limiares da carta secreta (quantidade para 1, 2 e 3 votos).
 	public List<Integer> getLimiaresCartaSecreta(String tipo) {
 		TipoConselheiroSecreto t = TipoConselheiroSecreto.valueOf(tipo);
 		List<Integer> limiares = new ArrayList<Integer>();
@@ -1052,31 +950,31 @@ public class Jogo implements ObservadoIF {
 		return limiares;
 	}
 
-	/** Quanto o jogador já atingiu na condição do seu conselheiro secreto (0 se não escolheu). */
+	// Quanto o jogador já atingiu na condição do seu conselheiro secreto (0 se não escolheu).
 	public int getProgressoConselheiroSecreto(String cor) {
 		Jogador j = jogador(cor);
 		CartaConselheiroSecreto c = j.getConselheiroSecreto();
 		return c == null ? 0 : Apuracao.quantidadeSecreto(c.getTipo(), j, tabuleiro);
 	}
 
-	/** Votos de fim de jogo do conselheiro secreto (0 a 3, pág. 19). */
+	// Votos de fim de jogo do conselheiro secreto (0 a 3, pág. 19).
 	public int getVotosDoConselheiroSecreto(String cor) {
 		Jogador j = jogador(cor);
 		CartaConselheiroSecreto c = j.getConselheiroSecreto();
 		return c == null ? 0 : c.calcularVotos(Apuracao.quantidadeSecreto(c.getTipo(), j, tabuleiro));
 	}
 
-	/** Votos de fim de jogo pela influência nas 3 regiões (págs. 14-15). */
+	// Votos de fim de jogo pela influência nas 3 regiões (págs. 14-15).
 	public int getVotosDeInfluencia(String cor) {
 		return Apuracao.votosDeInfluencia(jogador(cor), gerenciador.getJogadoresEmOrdem(), tabuleiro);
 	}
 
-	/** Votos do Kurultai + influência + conselheiro secreto: o total do fim de jogo. */
+	// Votos do Kurultai + influência + conselheiro secreto: o total do fim de jogo.
 	public int getVotosFinais(String cor) {
 		return getVotos(cor) + getVotosDeInfluencia(cor) + getVotosDoConselheiroSecreto(cor);
 	}
 
-	/** Cartas de conselheiro aberto reveladas e ainda disponíveis (ex.: "ESPADAS_4"). */
+	// Cartas de conselheiro aberto reveladas e ainda disponíveis (ex.: "ESPADAS_4").
 	public List<String> getCartasAbertasDisponiveis() {
 		List<String> nomes = new ArrayList<String>();
 		for (CartaConselheiroAberto c : distribuidor.getCartasAbertasDisponiveis()) {
@@ -1086,7 +984,6 @@ public class Jogo implements ObservadoIF {
 		return nomes;
 	}
 
-	/** Cartas de conselheiro aberto que o jogador já conquistou. */
 	public List<String> getCartasAbertasConquistadas(String cor) {
 		List<String> nomes = new ArrayList<String>();
 		for (CartaConselheiroAberto c : jogador(cor).getCartasAbertasConquistadas()) {
@@ -1100,19 +997,14 @@ public class Jogo implements ObservadoIF {
 		return TipoConselheiroAberto.valueOf(tipo).getDescricao();
 	}
 
-	/** Número grande impresso na carta aberta (a quantidade exigida). */
+	// Número grande impresso na carta aberta (a quantidade exigida).
 	public int getQuantidadeCartaAberta(String tipo) {
 		return TipoConselheiroAberto.valueOf(tipo).getQuantidade();
 	}
 
-	/**
-	 * Confere se o jogador da vez cumpriu a demanda de alguma carta de
-	 * conselheiro aberto revelada; se sim, ele fica com a carta e ganha 1 voto
-	 * (págs. 13 e 18). É chamado depois das ações deste trecho da API; as
-	 * outras ações (atacar, construir, pegar tributo) também devem chamá-lo.
-	 *
-	 * @return as cartas conquistadas agora
-	 */
+	// Vê se o jogador da vez cumpriu alguma carta de conselheiro aberto. Se
+	// cumpriu, fica com a carta e ganha 1 voto (págs. 13 e 18). Toda ação que
+	// mexe nos recursos chama isso no final. Devolve as cartas que ele ganhou.
 	public List<String> verificarCartasAbertas() {
 		Jogador j = jogadorDaVez();
 		List<String> conquistadas = new ArrayList<String>();
@@ -1129,9 +1021,7 @@ public class Jogo implements ObservadoIF {
 		return conquistadas;
 	}
 
-	// =====================================================================
 	// Ações no mapa: tributos, yurts, ataques, Khan e habilidades
-	// =====================================================================
 
 	// Paradas onde o peão da vez já esteve no turno (contando a de onde saiu).
 	// É a partir delas que ele pega tributo, constrói yurt e ataca.
@@ -1141,7 +1031,7 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	// ----------------------------------------------------------- tributos
+	// tributos
 
 	public List<String> getProvincias() {
 		List<String> ids = new ArrayList<String>();
@@ -1152,7 +1042,7 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/** "ESPADA", "YURT" ou "MOEDA". */
+	// "ESPADA", "YURT" ou "MOEDA".
 	public String getTipoTributoDaProvincia(String idProvincia) {
 		return tabuleiro.getProvincia(idProvincia).getTipoTributo().name();
 	}
@@ -1161,7 +1051,7 @@ public class Jogo implements ObservadoIF {
 		return tabuleiro.getProvincia(idProvincia).getPecasDeTributo();
 	}
 
-	/** Punhos que ainda sobram no turno (os da coluna + os extras dos bônus). */
+	// Punhos que ainda sobram no turno (os da coluna + os extras dos bônus).
 	public int getPunhosDaVez() {
 		return punhosDaColunaRestantes() + punhosExtrasDaVez;
 	}
@@ -1191,7 +1081,7 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/** Pega 1 peça da província gastando 1 punho. Retorna false se não puder. */
+	// Pega 1 peça da província gastando 1 punho. Retorna false se não puder.
 	public boolean pegarTributo(String idProvincia) {
 		if (!podePegarTributo(idProvincia)) {
 			return false;
@@ -1211,9 +1101,9 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	// -------------------------------------------------------------- yurts
+	// yurts
 
-	/** Cores dos donos dos yurts da parada. */
+	// Cores dos donos dos yurts da parada.
 	public List<String> getYurtsNaParada(String idParada) {
 		List<String> cores = new ArrayList<String>();
 		for (Cor c : tabuleiro.getDonosDosYurts(idParada)) {
@@ -1252,7 +1142,7 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/** Constrói um yurt na parada pagando 1 peça de yurt (a virtual vai primeiro). */
+	// Constrói um yurt na parada pagando 1 peça de yurt (a virtual vai primeiro).
 	public boolean construirYurt(String idParada) {
 		if (!podeConstruirYurt(idParada)) {
 			return false;
@@ -1270,7 +1160,7 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	// ------------------------------------------------------------- cidades
+	// cidades
 
 	public List<String> getCidades() {
 		List<String> ids = new ArrayList<String>();
@@ -1281,12 +1171,12 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/** Nome com acento, pra mostrar na tela (ex.: "Bagdá"). */
+	// Nome com acento, pra mostrar na tela (ex.: "Bagdá").
 	public String getNomeDaCidade(String idCidade) {
 		return nomeCidade(idCidade).getNome();
 	}
 
-	/** "NA_PILHA", "DISPONIVEL" ou "CONQUISTADA". */
+	// "NA_PILHA", "DISPONIVEL" ou "CONQUISTADA".
 	public String getEstadoDaCidade(String idCidade) {
 		return cidade(idCidade).getEstado().name();
 	}
@@ -1299,7 +1189,7 @@ public class Jogo implements ObservadoIF {
 		return nomes;
 	}
 
-	/** Cor de quem conquistou, ou null. */
+	// Cor de quem conquistou, ou null.
 	public String getConquistadorDaCidade(String idCidade) {
 		Cor c = cidade(idCidade).getConquistador();
 		return c == null ? null : c.name();
@@ -1315,7 +1205,7 @@ public class Jogo implements ObservadoIF {
 		return tabuleiro.getNumeroDeCidadesNaPilha();
 	}
 
-	/** Quantas espadas custa o próximo tesouro dessa cidade neste turno (1 ou 2). */
+	// Quantas espadas custa o próximo tesouro dessa cidade neste turno (1 ou 2).
 	public int getCustoDeAtaque(String idCidade) {
 		return turnoNoMapa.custoDoAtaque(nomeCidade(idCidade));
 	}
@@ -1346,11 +1236,9 @@ public class Jogo implements ObservadoIF {
 		return ids;
 	}
 
-	/**
-	 * Ataca a cidade e pega o tesouro escolhido. O primeiro tesouro da cidade
-	 * no turno custa 1 espada e os outros custam 2. Quem pega o último
-	 * conquista a cidade e uma nova é revelada com 4 tesouros.
-	 */
+	// Ataca a cidade e pega o tesouro escolhido. O primeiro tesouro da cidade
+	// no turno custa 1 espada e os outros custam 2. Quem pega o último
+	// conquista a cidade e uma nova é revelada com 4 tesouros.
 	public boolean atacarCidade(String idCidade, String tesouro) {
 		if (!podeAtacar(idCidade, tesouro)) {
 			return false;
@@ -1403,14 +1291,14 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
-	// ---------------------------------------------------------------- Khan
+	// Khan
 
-	/** Id da província onde o Khan está, "MELHORIAS", ou null antes da 1ª vez. */
+	// Id da província onde o Khan está, "MELHORIAS", ou null antes da 1ª vez.
 	public String getLugarDoKhan() {
 		return tabuleiro.getLugarDoKhan();
 	}
 
-	/** As 4 províncias do Khan e a área de melhorias. */
+	// As 4 províncias do Khan e a área de melhorias.
 	public List<String> getLugaresDoKhan() {
 		return tabuleiro.getLugaresDoKhan();
 	}
@@ -1427,12 +1315,10 @@ public class Jogo implements ObservadoIF {
 		return khanPendente() && tabuleiro.podeMoverKhanPara(lugar);
 	}
 
-	/**
-	 * Coloca o Khan. Numa província do Khan, ela e as 2 das setas ganham uma
-	 * peça de tributo cada. Na área de melhorias, o jogador ganha a moeda e/ou
-	 * a espada dos ícones que estiverem descobertos e os espaços vazios
-	 * recebem melhorias novas.
-	 */
+	// Coloca o Khan. Numa província do Khan, ela e as 2 das setas ganham uma
+	// peça de tributo cada. Na área de melhorias, o jogador ganha a moeda e/ou
+	// a espada dos ícones que estiverem descobertos e os espaços vazios
+	// recebem melhorias novas.
 	public boolean colocarKhan(String lugar) {
 		if (!podeColocarKhan(lugar)) {
 			return false;
@@ -1463,7 +1349,7 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	// ------------------------------------------- reserva de peças de tributo
+	// reserva de peças de tributo
 
 	// a caixa do jogo vem com 10 espadas, 10 yurts e 15 moedas
 	private static final Map<TipoTributo, Integer> TRIBUTOS_NA_CAIXA = new EnumMap<TipoTributo, Integer>(
@@ -1474,7 +1360,7 @@ public class Jogo implements ObservadoIF {
 		TRIBUTOS_NA_CAIXA.put(TipoTributo.MOEDA, 15);
 	}
 
-	/** Peças desse tipo que sobraram na reserva, do lado do tabuleiro. */
+	// Peças desse tipo que sobraram na reserva, do lado do tabuleiro.
 	public int getTributosNaReserva(String tipo) {
 		return reservaDe(TipoTributo.valueOf(tipo));
 	}
@@ -1495,7 +1381,7 @@ public class Jogo implements ObservadoIF {
 		return Math.max(0, TRIBUTOS_NA_CAIXA.get(tipo) - foraDaReserva);
 	}
 
-	// ----------------------------------------------- habilidades (cartelas)
+	// habilidades (cartelas)
 
 	// Ogedei: 1x por turno paga 1 moeda (pode ser virtual) e pega um tesouro
 	// de qualquer cidade, menos o último. Não precisa estar do lado da cidade
@@ -1544,23 +1430,21 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	/** Usado pela View pra saber se mostra o botão do Chagatai. */
+	// Usado pela View pra saber se mostra o botão do Chagatai.
 	public boolean jogadorDaVezTrocaCavaloPorEspada() {
 		return jogadorDaVez().getHerdeiro().trocaCavaloPorEspada();
 	}
 
-	/** Espaço 0 a 4 da área de melhorias (da esquerda pra direita) está vazio? */
+	// Espaço 0 a 4 da área de melhorias (da esquerda pra direita) está vazio?
 	public boolean espacoDeMelhoriaVazio(int espaco) {
 		return mercado.espacoVazio(espaco);
 	}
 
-	// ------------------------------------------- habilidade do Jochi (4ª it.)
+	// habilidade do Jochi (4ª it.)
 
-	/**
-	 * Preparação do Jochi: "No início do jogo, pegue 2 melhorias ao acaso e
-	 * coloque uma delas na sua coluna branca." As 2 peças saem do topo da
-	 * pilha (viradas para baixo, então são ao acaso) e esperam a escolha.
-	 */
+	// Preparação do Jochi: "No início do jogo, pegue 2 melhorias ao acaso e
+	// coloque uma delas na sua coluna branca." As 2 peças saem do topo da
+	// pilha (viradas para baixo, então são ao acaso) e esperam a escolha.
 	private void prepararMelhoriasDoJochi() {
 		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
 			if (j.getHerdeiro().comecaComMelhoriaNaColunaBranca()) {
@@ -1572,23 +1456,18 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
-	/** Cor do jogador que ainda precisa escolher a melhoria inicial (Jochi), ou {@code null}. */
+	// Cor do jogador que ainda precisa escolher a melhoria inicial (Jochi), ou null.
 	public String getCorComMelhoriaInicialParaEscolher() {
 		return melhoriasIniciaisDoJochi.isEmpty() ? null : jochi.getCor().name();
 	}
 
-	/** Ids das 2 melhorias tiradas para o Jochi escolher (vazio se já escolheu). */
+	// Ids das 2 melhorias tiradas para o Jochi escolher (vazio se já escolheu).
 	public List<String> getMelhoriasIniciaisParaEscolher() {
 		return PecaMelhoria.ids(melhoriasIniciaisDoJochi);
 	}
 
-	/**
-	 * O Jochi escolhe qual das 2 melhorias vai para a coluna branca; a outra
-	 * volta para o fundo da pilha. A peça já vale desde o primeiro turno.
-	 *
-	 * @param indice posição em {@link #getMelhoriasIniciaisParaEscolher()}
-	 * @return {@code false} se não há escolha pendente ou o índice é inválido
-	 */
+	// O Jochi escolhe qual das 2 vai pra coluna branca; a outra volta pro fundo
+	// da pilha. Essa peça já vale desde o primeiro turno.
 	public boolean escolherMelhoriaInicial(int indice) {
 		if (indice < 0 || indice >= melhoriasIniciaisDoJochi.size()) {
 			return false;
@@ -1605,7 +1484,7 @@ public class Jogo implements ObservadoIF {
 		return true;
 	}
 
-	// ------------------------------------------ salvar e carregar (4ª it.)
+	// salvar e carregar (4ª it.)
 	// Parte do Rafael: jogadores, tabuleiros dos jogadores, cartas, mercado
 	// de melhorias, reserva de tesouros e conselheiros. O Jogo.salvar/carregar
 	// chama estes dois métodos junto com os das outras partes.
@@ -1617,11 +1496,8 @@ public class Jogo implements ObservadoIF {
 	static final String SECAO_CARTAS = "CARTAS";
 	private static final int TOTAL_DE_MELHORIAS = 44;
 
-	/**
-	 * Escreve as seções {@code [JOGADOR <COR>]} (uma por jogador, na ordem
-	 * de jogo), {@code [MERCADO]}, {@code [RESERVA]}, {@code [CONSELHEIROS]}
-	 * e {@code [CARTAS]}.
-	 */
+	// escreve [JOGADOR <COR>] (um por jogador), [MERCADO], [RESERVA],
+	// [CONSELHEIROS] e [CARTAS]
 	void salvarParteDosJogadores(PrintWriter saida) {
 		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
 			ArquivoPartida.secao(saida, SECAO_JOGADOR + j.getCor().name());
@@ -1641,13 +1517,9 @@ public class Jogo implements ObservadoIF {
 		distribuidor.salvar(saida);
 	}
 
-	/**
-	 * Lê as seções escritas por {@link #salvarParteDosJogadores(PrintWriter)}
-	 * e troca o estado desta partida pelo do arquivo. A partida tem de ter
-	 * sido criada com as mesmas cores (a seção [PARTIDA] diz quais são).
-	 *
-	 * @throws IllegalArgumentException se falta algo ou o arquivo é incoerente
-	 */
+	// Lê o que o salvarParteDosJogadores escreveu. A partida já tem que ter sido
+	// criada com as mesmas cores (que vêm da seção [PARTIDA]). Se faltar alguma
+	// coisa ou os números não baterem, lança IllegalArgumentException.
 	void carregarParteDosJogadores(Map<String, Map<String, String>> secoes) {
 		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
 			Map<String, String> secao = ArquivoPartida.secaoObrigatoria(secoes, SECAO_JOGADOR + j.getCor().name());
@@ -1681,7 +1553,7 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
-	// ---------------------------------------- salvar e carregar o mapa (4ª it.)
+	// salvar e carregar o mapa (4ª it.)
 	// Parte do Arthur: peões, yurts, tributos das províncias, cidades (com os
 	// tesouros e a pilha) e o Khan, tudo na seção [MAPA].
 	//
@@ -1712,27 +1584,20 @@ public class Jogo implements ObservadoIF {
 		mudouEstado();
 	}
 
-	// ------------------------------------ salvar e carregar a partida (4ª it.)
+	// salvar e carregar a partida (4ª it.)
 	// Parte do Igor: junta as partes do Rafael e do Arthur num arquivo só. A
 	// seção [PARTIDA] guarda as cores na ordem de jogo, de quem é a vez e
 	// quantos turnos faltam para o fim (se ele já foi disparado).
 
 	static final String SECAO_PARTIDA = "PARTIDA";
 
-	/**
-	 * Só se salva no começo de um turno, antes de o jogador da vez fazer
-	 * qualquer jogada: o que vale só durante o turno não vai para o arquivo.
-	 */
+	// Só se salva no começo de um turno, antes de o jogador da vez fazer
+	// qualquer jogada: o que vale só durante o turno não vai para o arquivo.
 	public boolean podeSalvar() {
 		return !turnoComecou;
 	}
 
-	/**
-	 * Salva a partida num arquivo texto.
-	 *
-	 * @throws IllegalStateException se o jogador da vez já começou o turno
-	 * @throws IOException           se não der para gravar o arquivo
-	 */
+	// Salva num arquivo texto. Só funciona no começo do turno (ver podeSalvar).
 	public void salvar(File arquivo) throws IOException {
 		if (!podeSalvar()) {
 			throw new IllegalStateException("Só dá para salvar no começo do turno");
@@ -1746,7 +1611,7 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
-	/** Escreve o arquivo inteiro: cabeçalho, [PARTIDA] e as partes do Rafael e do Arthur. */
+	// Escreve o arquivo inteiro: cabeçalho, [PARTIDA] e as partes do Rafael e do Arthur.
 	void salvar(PrintWriter saida) {
 		saida.println(ArquivoPartida.CABECALHO);
 		ArquivoPartida.secao(saida, SECAO_PARTIDA);
@@ -1757,13 +1622,9 @@ public class Jogo implements ObservadoIF {
 		salvarParteDoMapa(saida);
 	}
 
-	/**
-	 * Continua uma partida salva: cria uma partida com as cores do arquivo e
-	 * troca o estado dela pelo do arquivo. Só se tudo der certo ela passa a
-	 * ser a instância do jogo (Singleton); senão nada muda.
-	 *
-	 * @throws IOException se não der para ler o arquivo ou ele for inválido
-	 */
+	// Continua uma partida salva. Cria uma partida com as cores do arquivo e
+	// troca o estado pelo que foi lido; ela só vira a instância do Singleton se
+	// tudo der certo. Arquivo com problema vira IOException.
 	public static Jogo carregar(File arquivo) throws IOException {
 		Reader entrada = new FileReader(arquivo);
 		try {
@@ -1773,7 +1634,7 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
-	/** Usado também pelos testes, com um mapa pequeno e semente fixa. */
+	// Usado também pelos testes, com um mapa pequeno e semente fixa.
 	static Jogo carregar(Reader entrada, Tabuleiro tabuleiro, Random aleatorio) throws IOException {
 		Map<String, Map<String, String>> secoes = ArquivoPartida.ler(entrada);
 		try {
@@ -1797,13 +1658,13 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
-	// ----------------------------------------------------------- apoio
+	// apoio
 
 	private Jogador jogadorDaVez() {
 		return gerenciador.getJogadorDaVez();
 	}
 
-	/** Fim do turno do jogador da vez: zera o que só vale durante o turno. */
+	// Fim do turno do jogador da vez: zera o que só vale durante o turno.
 	private void encerrarTurnoDaVez() {
 		Jogador j = jogadorDaVez();
 		while (melhoriasGratisPendentes > 0 && escolherMelhoriaGratis(-1)) {
@@ -1826,7 +1687,7 @@ public class Jogo implements ObservadoIF {
 		punhosExtrasDaVez = 0;
 	}
 
-	// ------------------------------------------------------------- Observer
+	// Observer
 
 	@Override
 	public void add(ObservadorIF o) {
@@ -1838,13 +1699,8 @@ public class Jogo implements ObservadoIF {
 		observadores.remove(o);
 	}
 
-	/**
-	 * Callback dos observadores (Capítulo 17): devolve um dado do estado
-	 * pelo código. Os demais dados são lidos pelos métodos da Façade.
-	 *
-	 * @param i {@link #VEZ} (posição do jogador da vez na ordem de jogo) ou
-	 *          {@link #MOVIMENTOS} (movimentos do jogador da vez)
-	 */
+	// get(int) do Observer, como no Capítulo 17: devolve um dado pelo código
+	// (VEZ ou MOVIMENTOS). O resto a View lê pelos métodos da Façade.
 	@Override
 	public int get(int i) {
 		if (i == VEZ) {
@@ -1856,13 +1712,12 @@ public class Jogo implements ObservadoIF {
 		throw new IllegalArgumentException("Código inválido: " + i);
 	}
 
-	/** Uma jogada mudou o estado: o turno começou e os observadores são avisados. */
+	// Uma jogada mudou o estado: o turno começou e os observadores são avisados.
 	private void mudouEstado() {
 		turnoComecou = true;
 		avisarObservadores();
 	}
 
-	/** Notifica todos os observadores. */
 	private void avisarObservadores() {
 		// cópia: um observador pode se cadastrar ou sair durante o aviso (ex.: abrir uma janela)
 		for (ObservadorIF o : new ArrayList<ObservadorIF>(observadores)) {
@@ -1870,14 +1725,12 @@ public class Jogo implements ObservadoIF {
 		}
 	}
 
-	// ------------------------------------------------------- fim e vencedor
+	// fim e vencedor
 
-	/**
-	 * Fim de jogo disparado (pág. 14): a ficha branca, que soma os votos de
-	 * todos os jogadores, chegou a 10/14/16/17 para 2/3/4/5 jogadores, ou
-	 * todas as cidades foram conquistadas. Depois disso a rodada atual termina
-	 * e todos jogam mais uma vez ({@link #getTurnosAteOFim()}).
-	 */
+	// Fim de jogo disparado (pág. 14): a ficha branca, que soma os votos de
+	// todos os jogadores, chegou a 10/14/16/17 para 2/3/4/5 jogadores, ou
+	// todas as cidades foram conquistadas. Depois disso a rodada atual termina
+	// e todos jogam mais uma vez (getTurnosAteOFim()).
 	public boolean fimDeJogoDisparado() {
 		int total = 0;
 		for (Jogador j : gerenciador.getJogadoresEmOrdem()) {
@@ -1887,14 +1740,10 @@ public class Jogo implements ObservadoIF {
 		return total >= limite || tabuleiro.todasAsCidadesConquistadas();
 	}
 
-	/**
-	 * Vencedores da partida (pág. 16): quem tem mais votos no total (Kurultai
-	 * + influência + conselheiro secreto). Se houver empate, vence o empatado
-	 * com mais tesouros não entregues; depois, o mais próximo de Karakorum. Se
-	 * ainda assim houver empate, todos eles compartilham a vitória.
-	 *
-	 * @return as cores dos vencedores (mais de uma só em caso de empate)
-	 */
+	// Vencedores da partida (pág. 16): quem tem mais votos no total (Kurultai
+	// + influência + conselheiro secreto). Se houver empate, vence o empatado
+	// com mais tesouros não entregues; depois, o mais próximo de Karakorum. Se
+	// ainda assim houver empate, todos eles compartilham a vitória.
 	public List<String> getVencedores() {
 		List<Jogador> empatados = gerenciador.getJogadoresEmOrdem();
 		Map<Jogador, Integer> votos = new HashMap<Jogador, Integer>();
@@ -1916,7 +1765,7 @@ public class Jogo implements ObservadoIF {
 		return vencedores;
 	}
 
-	/** Os jogadores da lista com o maior valor (mais de um se houver empate). */
+	// Os jogadores da lista com o maior valor (mais de um se houver empate).
 	private static List<Jogador> osDeMaiorValor(List<Jogador> jogadores, Map<Jogador, Integer> valor) {
 		int maior = Integer.MIN_VALUE;
 		for (Jogador j : jogadores) {
@@ -1931,14 +1780,14 @@ public class Jogo implements ObservadoIF {
 		return melhores;
 	}
 
-	// ----------------------------------------------------------------- apoio
+	// apoio
 
-	/** Usado pelos testes. */
+	// Usado pelos testes.
 	Jogador getJogador(Cor cor) {
 		return gerenciador.getJogador(cor);
 	}
 
-	/** Usados pelos testes de salvar e carregar. */
+	// Usados pelos testes de salvar e carregar.
 	DistribuidorCartas getDistribuidor() {
 		return distribuidor;
 	}
@@ -1955,7 +1804,7 @@ public class Jogo implements ObservadoIF {
 		return conselho;
 	}
 
-	/** Distância do peão do jogador mais perto de Karakorum (Altani tem 2). */
+	// Distância do peão do jogador mais perto de Karakorum (Altani tem 2).
 	private int distanciaAteKarakorum(Jogador jogador) {
 		int menor = Integer.MAX_VALUE;
 		for (int n = 1; n <= jogador.getHerdeiro().getNumeroDePeoes(); n++) {

@@ -24,7 +24,7 @@ import java.util.Set;
 class Parada {
 	private final String id;
 	private final TipoParada tipo;
-	/* Região da parada; {@code null} apenas para Karakorum (spawn). */
+	/* Região da parada; null apenas para Karakorum (spawn). */
 	private final Regiao regiao;
 
 	private final Map<String, Parada> vizinhas = new HashMap<String, Parada>();
@@ -73,7 +73,7 @@ class Parada {
 		return tipo.temConselheiro();
 	}
 
-	// ---------------------------------------------------------- adjacências
+	// adjacências
 	// A simetria das ligações é garantida pelo Tabuleiro.
 
 	void ligar(Parada outra) {
@@ -104,12 +104,10 @@ class Parada {
 		return Collections.unmodifiableCollection(cidadesAdjacentes.values());
 	}
 
-	// ---------------------------------------------------------------- peões
+	// peões
 
-	/**
-	 * Indica se mais um peão pode terminar o movimento aqui. Passar pela
-	 * parada é sempre permitido; esta regra vale só para onde o peão para.
-	 */
+	// Indica se mais um peão pode terminar o movimento aqui. Passar pela
+	// parada é sempre permitido; esta regra vale só para onde o peão para.
 	boolean podeReceberPeao() {
 		return peoes.size() < tipo.getCapacidadePeoes();
 	}
@@ -140,7 +138,7 @@ class Parada {
 		return Collections.unmodifiableCollection(peoes);
 	}
 
-	// ---------------------------------------------------------------- yurts
+	// yurts
 
 	boolean podeReceberYurt() {
 		return yurts.size() < tipo.getCapacidadeYurts();
@@ -156,10 +154,8 @@ class Parada {
 		yurts.add(cor);
 	}
 
-	/**
-	 * Habilidade de Tolui (págs. 6 e 20): no início do jogo ele coloca 1 yurt
-	 * em Karakorum, única exceção à regra de que Karakorum não tem yurts.
-	 */
+	// Habilidade de Tolui (págs. 6 e 20): no início do jogo ele coloca 1 yurt
+	// em Karakorum, única exceção à regra de que Karakorum não tem yurts.
 	void adicionarYurtDeTolui(Cor cor) {
 		if (!isKarakorum()) {
 			throw new IllegalStateException("O yurt inicial de Tolui só vai em Karakorum");
@@ -173,7 +169,7 @@ class Parada {
 		yurts.add(cor);
 	}
 
-	/** Donos dos yurts desta parada (lista vazia se não houver yurt). */
+	// Donos dos yurts desta parada (lista vazia se não houver yurt).
 	List<Cor> getYurts() {
 		return Collections.unmodifiableList(yurts);
 	}
@@ -201,7 +197,7 @@ class Parada {
 		return id + " (" + tipo + (regiao == null ? "" : ", " + regiao.getNome()) + ")";
 	}
 
-	// ------------------------------------------------- carregar partida
+	// carregar partida
 
 	// tira todos os peões e yurts (o Tabuleiro coloca de novo os do arquivo)
 	void esvaziar() {

@@ -9,21 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Controla os baralhos de conselheiros e a distribuição das cartas.
+/*
+ * Baralhos de conselheiro. Na preparação (págs. 3-4) embaralha as 10
+ * secretas e dá 2 pra cada um, e embaralha as 14 abertas e revela 4 (as
+ * outras ficam fora da partida). Cada jogador fica com 1 secreta e descarta
+ * a outra (pág. 6).
  *
- * Preparação do jogo (págs. 3-4 e 6):
- * <ul>
- * <li>embaralha as 10 cartas de conselheiro secreto e dá 2 a cada jogador;</li>
- * <li>embaralha as 14 cartas de conselheiro aberto e revela 4; as demais não
- * são usadas na partida.</li>
- * </ul>
- * Antes da primeira rodada cada jogador escolhe 1 carta secreta e descarta a
- * outra.
- *
- * Distribuição ao longo do jogo (págs. 13 e 18): o primeiro jogador a
- * cumprir a demanda de uma carta de conselheiro aberto revelada fica com ela
- * e ganha 1 voto. Nenhuma carta nova é revelada no lugar.
+ * Durante o jogo o primeiro a cumprir uma carta aberta fica com ela e ganha
+ * 1 voto, e não aparece outra no lugar (págs. 13 e 18).
  */
 class DistribuidorCartas {
 	static final int CARTAS_ABERTAS_REVELADAS = 4;
@@ -31,13 +24,13 @@ class DistribuidorCartas {
 	private final Baralho<CartaConselheiroSecreto> baralhoSecreto;
 	private final Baralho<CartaConselheiroAberto> baralhoAberto;
 
-	/** Cartas de conselheiro aberto reveladas e ainda disponíveis (chave = id). */
+	// Cartas de conselheiro aberto reveladas e ainda disponíveis (chave = id).
 	private final Map<Integer, CartaConselheiroAberto> cartasAbertasReveladas =
 			new HashMap<Integer, CartaConselheiroAberto>();
 
 	private boolean preparado = false;
 
-	/** Todas as cartas da partida, pelo tipo (usado ao carregar uma partida). */
+	// todas as cartas pelo tipo, pra achar a carta certa ao carregar
 	private final Map<TipoConselheiroSecreto, CartaConselheiroSecreto> secretasPorTipo =
 			new HashMap<TipoConselheiroSecreto, CartaConselheiroSecreto>();
 	private final Map<TipoConselheiroAberto, CartaConselheiroAberto> abertasPorTipo =
@@ -81,12 +74,8 @@ class DistribuidorCartas {
 		return cartas;
 	}
 
-	// ------------------------------------------------------------ preparação
+	// preparação
 
-	/**
-	 * Faz a preparação inicial das cartas: embaralha os dois baralhos, dá 2
-	 * cartas secretas a cada jogador e revela 4 cartas de conselheiro aberto.
-	 */
 	void prepararCartas(Collection<Jogador> jogadores) {
 		if (preparado) {
 			throw new IllegalStateException("As cartas já foram distribuídas");
@@ -109,10 +98,7 @@ class DistribuidorCartas {
 		preparado = true;
 	}
 
-	/**
-	 * O jogador escolhe a carta secreta que vai manter; a outra vai para o
-	 * descarte do baralho secreto.
-	 */
+	// a carta que ele não quis vai pro descarte
 	void escolherConselheiroSecreto(Jogador jogador, int idCarta) {
 		if (jogador == null) {
 			throw new IllegalArgumentException("Jogador nulo");
@@ -122,16 +108,10 @@ class DistribuidorCartas {
 		}
 	}
 
-	// ------------------------------------------- distribuição durante o jogo
+	// distribuição durante o jogo
 
-	/**
-	 * Entrega uma carta de conselheiro aberto ao jogador que cumpriu sua
-	 * demanda (a verificação da demanda depende do estado do tabuleiro e é
-	 * feita por quem chama). Apenas o primeiro a cumprir recebe a carta.
-	 *
-	 * @return {@code true} se o jogador recebeu a carta e o voto;
-	 *         {@code false} se a carta não está mais disponível
-	 */
+	// Dá a carta aberta pra quem cumpriu (quem confere a demanda é a Apuracao,
+	// chamada pelo Jogo). Só o primeiro leva: false se ela já saiu.
 	boolean entregarCartaAberta(Jogador jogador, int idCarta) {
 		if (jogador == null) {
 			throw new IllegalArgumentException("Jogador nulo");
@@ -144,7 +124,6 @@ class DistribuidorCartas {
 		return true;
 	}
 
-	/** Busca, entre as cartas abertas disponíveis, a de um determinado tipo. */
 	CartaConselheiroAberto getCartaAbertaDisponivel(TipoConselheiroAberto tipo) {
 		for (CartaConselheiroAberto carta : cartasAbertasReveladas.values()) {
 			if (carta.getTipo() == tipo) {
@@ -179,7 +158,7 @@ class DistribuidorCartas {
 		return baralhoAberto;
 	}
 
-	// --------------------------------------------- salvar e carregar (4ª it.)
+	// salvar e carregar (4ª it.)
 
 	CartaConselheiroSecreto getCartaSecreta(TipoConselheiroSecreto tipo) {
 		return secretasPorTipo.get(tipo);
@@ -189,12 +168,9 @@ class DistribuidorCartas {
 		return abertasPorTipo.get(tipo);
 	}
 
-	/**
-	 * Seção {@code [CARTAS]}: as cartas abertas ainda disponíveis e o
-	 * descarte das secretas. As cartas de cada jogador ficam na seção dele, e
-	 * os montes não precisam ir para o arquivo: depois da preparação nada
-	 * mais é comprado deles, e eles são recalculados ao carregar.
-	 */
+	// Seção [CARTAS]: abertas ainda na mesa e o descarte das secretas. As cartas
+	// de cada jogador vão na seção dele. Os montes não precisam ir: depois da
+	// preparação ninguém compra mais deles, e ao carregar a gente recalcula.
 	void salvar(PrintWriter saida) {
 		List<String> nomes = new ArrayList<String>();
 		for (CartaConselheiroAberto c : cartasAbertasReveladas.values()) {
@@ -209,13 +185,9 @@ class DistribuidorCartas {
 		ArquivoPartida.linha(saida, "descarteSecretas", ArquivoPartida.juntar(nomes));
 	}
 
-	/**
-	 * Restaura as cartas a partir da seção {@code [CARTAS]}. Deve ser chamado
-	 * depois de os jogadores terem sido carregados, porque os montes são o
-	 * que sobra das cartas que não estão com ninguém.
-	 *
-	 * @throws IllegalArgumentException se uma carta aparece em dois lugares
-	 */
+	// Tem que vir depois de carregar os jogadores, porque os montes são o que
+	// sobra das cartas que não estão com ninguém. Carta repetida em dois
+	// lugares dá IllegalArgumentException.
 	void carregar(Map<String, String> secao, Collection<Jogador> jogadores) {
 		List<CartaConselheiroSecreto> descarte = new ArrayList<CartaConselheiroSecreto>();
 		for (String t : ArquivoPartida.lista(secao, "descarteSecretas")) {

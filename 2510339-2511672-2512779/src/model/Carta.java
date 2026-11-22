@@ -1,11 +1,8 @@
 package model;
 
-/**
- * Carta genérica do jogo. Cada carta tem um identificador único,
- * usado como chave nas coleções (HashMap) de jogadores e do distribuidor.
- *
- * É abstrata para permitir a extensão por novos tipos de carta
- * (princípio aberto/fechado).
+/*
+ * Carta genérica. O id é a chave nos HashMaps do jogador e do distribuidor.
+ * É abstrata pra dar pra criar outros tipos de carta depois (aberto/fechado).
  */
 abstract class Carta {
 	private final int id;
@@ -18,10 +15,10 @@ abstract class Carta {
 		return id;
 	}
 
-	/** Nome legível da carta (ex.: "Viajante"). */
+	// Nome legível da carta (ex.: "Viajante").
 	abstract String getNome();
 
-	/** Texto que descreve a condição da carta. */
+	// Texto que descreve a condição da carta.
 	abstract String getDescricao();
 
 	@Override

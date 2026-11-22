@@ -21,26 +21,21 @@ import model.Jogo;
 import model.ObservadoIF;
 import model.ObservadorIF;
 
-/**
- * Janela de cartas do jogador da vez:
- * <ul>
- * <li>o conselheiro secreto dele, com o quanto já atingiu da condição; se ele
- * ainda não escolheu, as 2 cartas recebidas e um botão para escolher
- * (pág. 6);</li>
- * <li>as cartas de conselheiro aberto ainda disponíveis;</li>
- * <li>as cartas abertas que ele já conquistou.</li>
- * </ul>
- * {@link #escolherConselheirosSecretos(Window, Jogo)} abre a escolha para
- * cada jogador, um de cada vez, no início da partida.
+/*
+ * Cartas do jogador da vez: o conselheiro secreto dele (com quanto já
+ * cumpriu), as cartas abertas que ainda estão na mesa e as que ele já
+ * ganhou. Se ele ainda não escolheu a secreta, mostra as 2 com um botão pra
+ * escolher (pág. 6). No começo da partida o escolherConselheirosSecretos
+ * abre essa escolha pra cada jogador, um de cada vez.
  *
- * É observadora da partida: enquanto existir, se atualiza sozinha quando o
- * estado muda (ex.: a vez passa ou o jogador conquista uma carta).
+ * É observadora da partida, então se atualiza sozinha (a vez passa, alguém
+ * ganha uma carta...).
  */
 class JanelaCartas extends JDialog implements ObservadorIF {
 	private static final long serialVersionUID = 1L;
 
 	private final Jogo jogo;
-	/** Jogador mostrado; {@code null} = o jogador da vez. */
+	// null = mostra sempre o jogador da vez
 	private final String corFixa;
 	private final JPanel conteudo = new JPanel();
 
@@ -65,10 +60,8 @@ class JanelaCartas extends JDialog implements ObservadorIF {
 		atualizar();
 	}
 
-	/**
-	 * Início da partida: cada jogador, na ordem de jogo, escolhe o seu
-	 * conselheiro secreto numa janela modal (os outros não devem olhar).
-	 */
+	// Começo da partida: cada um, na ordem de jogo, escolhe a carta secreta numa
+	// janela modal (os outros não podem olhar).
 	static void escolherConselheirosSecretos(Window dono, Jogo jogo) {
 		for (String cor : jogo.getCores()) {
 			if (jogo.getConselheiroSecreto(cor) == null) {
@@ -95,7 +88,7 @@ class JanelaCartas extends JDialog implements ObservadorIF {
 	void atualizar() {
 		conteudo.removeAll();
 		String cor = cor();
-		setTitle("Cartas de conselheiro — " + cor);
+		setTitle("Cartas de conselheiro - " + cor);
 
 		String secreto = jogo.getConselheiroSecreto(cor);
 		if (secreto == null) {
@@ -116,7 +109,7 @@ class JanelaCartas extends JDialog implements ObservadorIF {
 			int votos = jogo.getVotosDoConselheiroSecreto(cor);
 			JPanel linha = linhaDeCartas();
 			linha.add(cartaSecreta(secreto,
-					"Você tem " + progresso + " — hoje vale " + votos + (votos == 1 ? " voto" : " votos")));
+					"Você tem " + progresso + ", hoje vale " + votos + (votos == 1 ? " voto" : " votos")));
 			conteudo.add(linha);
 		}
 
@@ -170,7 +163,6 @@ class JanelaCartas extends JDialog implements ObservadorIF {
 		conteudo.add(rotulo);
 	}
 
-	/** Botão "Ficar com esta": escolhe o conselheiro secreto. */
 	private class TratadorEscolha implements ActionListener {
 		private final String cor;
 		private final String tipo;
@@ -189,7 +181,7 @@ class JanelaCartas extends JDialog implements ObservadorIF {
 		}
 	}
 
-	/** No BoxLayout, cada linha fica com a altura que precisa, sem esticar. */
+	// no BoxLayout a linha esticava; assim fica só com a altura que precisa
 	private void limitarAlturas() {
 		for (java.awt.Component c : conteudo.getComponents()) {
 			c.setMaximumSize(new Dimension(Integer.MAX_VALUE, c.getPreferredSize().height));

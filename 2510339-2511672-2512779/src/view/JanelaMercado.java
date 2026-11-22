@@ -20,20 +20,16 @@ import model.Jogo;
 import model.ObservadoIF;
 import model.ObservadorIF;
 
-/**
- * Janela da área de melhorias: mostra as peças disponíveis e o topo da
- * pilha, e permite comprar uma melhoria com 2 moedas (pág. 11). Quando o
- * jogador completa uma linha, a mesma janela é usada para escolher a
- * melhoria grátis da coluna branca (pág. 12).
- *
- * Para o Jochi aparece também a escolha da coluna, porque ele não precisa
- * seguir a cor das peças.
- *
- * É observadora da partida e se atualiza sozinha quando o estado muda.
+/*
+ * Janela das melhorias: as peças viradas pra cima e o topo da pilha, pra
+ * comprar com 2 moedas (pág. 11). Quando o jogador fecha uma linha, a mesma
+ * janela serve pra escolher a melhoria grátis da coluna branca (pág. 12).
+ * Pro Jochi aparece também a escolha da coluna, já que ele ignora a cor.
+ * É observadora da partida.
  */
 class JanelaMercado extends JDialog implements ObservadorIF {
 	private static final long serialVersionUID = 1L;
-	/** Índice que, na API do Model, representa o topo da pilha. */
+	// no Model o índice -1 é o topo da pilha
 	private static final int TOPO = -1;
 	private static final int NENHUMA = -2;
 
@@ -42,7 +38,7 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 	private final JLabel titulo = new JLabel();
 	private final JLabel situacao = new JLabel();
 	private final JButton botaoComprar = new JButton();
-	/** Coluna de destino (só para o Jochi); o item 0 é "a da cor da peça". */
+	// Coluna de destino (só para o Jochi); o item 0 é "a da cor da peça".
 	private final JComboBox<String> colunaDestino = new JComboBox<String>(
 			new String[] { "Coluna da cor da peça", "VERMELHA", "VERDE", "AMARELA" });
 	private final JLabel rotuloColuna = new JLabel("Colocar na:");
@@ -90,7 +86,7 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		return jogo.getMelhoriasGratisPendentes() > 0;
 	}
 
-	/** Coluna escolhida para o Jochi, ou {@code null} = coluna da cor da peça. */
+	// null = coluna da cor da peça
 	private String coluna() {
 		if (!jogo.jogadorDaVezIgnoraCorDasMelhorias() || colunaDestino.getSelectedIndex() <= 0) {
 			return null;
@@ -98,7 +94,6 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		return (String) colunaDestino.getSelectedItem();
 	}
 
-	/** Lê de novo o mercado e o jogador da vez. */
 	void atualizar() {
 		List<String> ids = jogo.getMelhoriasDisponiveis();
 		if (selecionada >= ids.size() || (selecionada == TOPO && jogo.getTamanhoPilhaMelhorias() == 0)) {
@@ -111,7 +106,7 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 			botaoComprar.setText("Pegar grátis");
 			botaoComprar.setEnabled(selecionada != NENHUMA);
 		} else {
-			titulo.setText("Melhorias disponíveis — vez de " + cor);
+			titulo.setText("Melhorias disponíveis - vez de " + cor);
 			situacao.setText("Moedas disponíveis: " + jogo.getTributoDisponivelDaVez("MOEDA") + " (cada melhoria custa "
 					+ jogo.getPrecoMelhoria() + "). A peça vai para a coluna da sua cor e só vale a partir do próximo turno.");
 			botaoComprar.setText("Comprar");
@@ -145,7 +140,6 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		situacao.setForeground(modoGratis() ? new Color(160, 80, 0) : Color.DARK_GRAY);
 	}
 
-	/** Clique numa peça: passa a ser a selecionada. */
 	private class TratadorSelecao implements ActionListener {
 		private final int indice;
 
@@ -160,7 +154,6 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		}
 	}
 
-	/** Troca da coluna de destino (Jochi): reavalia se a compra é possível. */
 	private class TratadorColuna implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -168,7 +161,6 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		}
 	}
 
-	/** Botão "Comprar" / "Pegar grátis". */
 	private class TratadorComprar implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {

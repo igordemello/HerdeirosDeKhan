@@ -1,11 +1,9 @@
 package model;
 
-/**
- * Cores dos jogadores. Segundo as regras, cada jogador escolhe uma cor e
- * recebe o tabuleiro de jogador (herdeiro) associado a essa cor.
- *
- * ATENÇÃO: a associação cor -> herdeiro abaixo deve ser conferida com os
- * tabuleiros físicos do jogo; basta alterar o herdeiro de cada constante.
+/*
+ * Cores dos jogadores. Pela regra cada um escolhe uma cor e recebe o
+ * tabuleiro (herdeiro) daquela cor. O manual não diz qual herdeiro é de qual
+ * cor, então a gente escolheu; pra trocar é só mudar aqui.
  */
 enum Cor {
 	AZUL(Herdeiro.ALTANI),

@@ -14,17 +14,17 @@ import view.JanelaJogadores;
 import view.JanelaPrincipal;
 import view.SeletorPartida;
 
-/**
+/*
  * Início do programa: janela inicial (novo jogo / continuar partida), escolha
  * dos jogadores e criação da partida, que depois passa para o
- * {@link ControladorJogo}. No fim de uma partida, "Jogar de novo" volta
+ * ControladorJogo. No fim de uma partida, "Jogar de novo" volta
  * direto para a escolha dos personagens (enunciado da 4ª iteração).
  */
 public class ControladorInicio {
 	private JanelaInicial janelaInicial;
 	private JanelaJogadores janelaJogadores;
 
-	/** Janela inicial: novo jogo ou continuar uma partida salva. */
+	// Janela inicial: novo jogo ou continuar uma partida salva.
 	public void mostrarJanelaInicial() {
 		janelaInicial = new JanelaInicial();
 		janelaInicial.getBotaoNovoJogo().addActionListener(new TratadorNovoJogo());
@@ -32,14 +32,14 @@ public class ControladorInicio {
 		janelaInicial.setVisible(true);
 	}
 
-	/** Janela de escolha dos personagens (novo jogo ou "Jogar de novo"). */
+	// Janela de escolha dos personagens (novo jogo ou "Jogar de novo").
 	public void mostrarEscolhaDosJogadores() {
 		janelaJogadores = new JanelaJogadores();
 		janelaJogadores.getBotaoJogar().addActionListener(new TratadorJogar());
 		janelaJogadores.setVisible(true);
 	}
 
-	/** "Continuar partida": escolhe o arquivo salvo e abre o tabuleiro como estava. */
+	// "Continuar partida": escolhe o arquivo salvo e abre o tabuleiro como estava.
 	private class TratadorContinuar implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -59,7 +59,7 @@ public class ControladorInicio {
 		}
 	}
 
-	/** "Novo jogo": troca a janela inicial pela escolha dos jogadores. */
+	// "Novo jogo": troca a janela inicial pela escolha dos jogadores.
 	private class TratadorNovoJogo implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
@@ -68,7 +68,7 @@ public class ControladorInicio {
 		}
 	}
 
-	/** "Jogar": cria a partida (Singleton) e abre a janela do tabuleiro. */
+	// "Jogar": cria a partida (Singleton) e abre a janela do tabuleiro.
 	private class TratadorJogar implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {

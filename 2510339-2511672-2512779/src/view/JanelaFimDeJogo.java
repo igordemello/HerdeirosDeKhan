@@ -16,12 +16,12 @@ import javax.swing.JPanel;
 
 import model.Jogo;
 
-/**
+/*
  * Resultado da partida (págs. 14-16): os votos de cada jogador (Kurultai,
  * influência nas regiões e conselheiro secreto), os tesouros não entregues
  * (1º desempate) e o vencedor. No fim pergunta se os jogadores querem jogar
  * de novo ou fechar o programa. É modal: o Controller espera ela ser fechada
- * e depois lê a resposta em {@link #querJogarDeNovo()}.
+ * e depois lê a resposta em querJogarDeNovo().
  */
 public class JanelaFimDeJogo extends JDialog {
 	private static final long serialVersionUID = 1L;
@@ -76,7 +76,7 @@ public class JanelaFimDeJogo extends JDialog {
 		return "<td align='center'>" + valor + "</td>";
 	}
 
-	/** Resposta à pergunta, depois que a janela fecha. Fechar no X conta como "não". */
+	// Resposta à pergunta, depois que a janela fecha. Fechar no X conta como "não".
 	public boolean querJogarDeNovo() {
 		return jogarDeNovo;
 	}

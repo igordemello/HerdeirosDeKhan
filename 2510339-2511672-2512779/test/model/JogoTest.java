@@ -12,15 +12,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Testes de integração da API do Model ({@link Jogo}): movimentação dos
+ * Testes de integração da API do Model (Jogo): movimentação dos
  * peões, fim de jogo e definição do vencedor.
  *
  * Os testes usam um mapa pequeno, montado aqui mesmo, para que cada
  * resultado esperado possa ser conferido à mão:
  *
- * <pre>
+ * 
  *   R1 ---- KARAKORUM ---- C1 (dupla) ---- P1 ---- P2
- * </pre>
+ * 
  *
  * Jogadores, nesta ordem: AZUL (Altani, 2 peões), VERDE (Jochi) e ROXO
  * (Tolui). Depois da preparação todos os peões estão em Karakorum.

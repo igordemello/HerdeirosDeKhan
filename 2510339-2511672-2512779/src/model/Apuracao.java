@@ -10,14 +10,14 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-/**
- * Contagens usadas pelas cartas de conselheiro e pela pontuação de fim de
- * jogo. Junta o que o jogador tem (tributos, tesouros, melhorias, bônus) com
- * o que está no mapa (yurts, cidades, províncias).
+/*
+ * Contas das cartas de conselheiro e da pontuação do fim do jogo. Mistura o
+ * que está com o jogador (tributos, tesouros, melhorias, bônus) com o que
+ * está no mapa (yurts, cidades, províncias).
  */
 final class Apuracao {
 
-	/** Coluna do tabuleiro do jogador associada a cada região (pág. 15). */
+	// Coluna do tabuleiro do jogador associada a cada região (pág. 15).
 	private static final Map<Regiao, ColunaJogador> COLUNA_DA_REGIAO = new HashMap<Regiao, ColunaJogador>();
 	static {
 		COLUNA_DA_REGIAO.put(Regiao.RUSSIA, ColunaJogador.AMARELA);
@@ -25,7 +25,7 @@ final class Apuracao {
 		COLUNA_DA_REGIAO.put(Regiao.CHINA, ColunaJogador.VERMELHA);
 	}
 
-	/** Votos de influência por número de melhorias (0 a 4) na coluna da região (pág. 15). */
+	// Votos de influência por número de melhorias (0 a 4) na coluna da região (pág. 15).
 	private static final int[] VOTOS_MAIS_YURTS = { 1, 1, 2, 2, 3 };
 	private static final int[] VOTOS_SEGUNDO_MAIS_YURTS = { 0, 1, 1, 2, 2 };
 
@@ -36,12 +36,10 @@ final class Apuracao {
 		return COLUNA_DA_REGIAO.get(regiao);
 	}
 
-	// ============================================== conselheiros secretos
+	// conselheiros secretos
 
-	/**
-	 * Quantidade que o jogador atingiu na condição do conselheiro secreto
-	 * (pág. 19); os votos saem de {@link TipoConselheiroSecreto#calcularVotos}.
-	 */
+	// Quanto o jogador já tem da condição da carta secreta (pág. 19). Os votos
+	// saem disso no TipoConselheiroSecreto.calcularVotos.
 	static int quantidadeSecreto(TipoConselheiroSecreto tipo, Jogador jogador, Tabuleiro tabuleiro) {
 		Cor cor = jogador.getCor();
 		TabuleiroJogador tab = jogador.getTabuleiro();
@@ -105,10 +103,8 @@ final class Apuracao {
 		}
 	}
 
-	/**
-	 * Melhorias agrupadas por símbolo. Os 5 tesouros virtuais contam como um
-	 * símbolo só ("tesouro virtual").
-	 */
+	// Melhorias agrupadas por símbolo. Os 5 tesouros virtuais contam como um
+	// símbolo só ("tesouro virtual").
 	private static Map<String, Integer> contarPorSimbolo(TabuleiroJogador tab) {
 		Map<String, Integer> contagem = new HashMap<String, Integer>();
 		for (PecaMelhoria m : tab.getTodasAsMelhorias()) {
@@ -138,7 +134,7 @@ final class Apuracao {
 		return n;
 	}
 
-	/** Tamanho do maior grupo de paradas vizinhas que têm yurt do jogador. */
+	// Tamanho do maior grupo de paradas vizinhas que têm yurt do jogador.
 	static int maiorGrupoDeYurtsConectados(Cor cor, Tabuleiro tabuleiro) {
 		Set<Parada> visitadas = new HashSet<Parada>();
 		int maior = 0;
@@ -164,15 +160,11 @@ final class Apuracao {
 		return maior;
 	}
 
-	// ================================================ conselheiros abertos
+	// conselheiros abertos
 
-	/**
-	 * Se o jogador cumpre a demanda da carta de conselheiro aberto (pág. 18).
-	 *
-	 * @param espadasVirtuais e tesourosVirtuais: o que as melhorias da coluna
-	 *                        ativada valem neste turno (0 e lista vazia para
-	 *                        quem não é o jogador da vez)
-	 */
+	// Se o jogador cumpre a carta aberta (pág. 18). espadasVirtuais e
+	// tesourosVirtuais são o que a coluna ativada dá no turno (0 e lista vazia
+	// pra quem não é o jogador da vez).
 	static boolean cumpre(TipoConselheiroAberto tipo, Jogador jogador, Tabuleiro tabuleiro, int espadasVirtuais,
 			List<TipoTesouro> tesourosVirtuais) {
 		Cor cor = jogador.getCor();
@@ -243,15 +235,12 @@ final class Apuracao {
 		return n;
 	}
 
-	// ========================================================= influência
+	// influência
 
-	/**
-	 * Votos de influência do jogador nas 3 regiões (págs. 14-15): quem tem
-	 * mais yurts numa região e o 2º com mais recebem votos conforme o número
-	 * de melhorias na coluna associada. Empate em 1º: todos ficam em 1º e
-	 * ninguém fica em 2º. Empate em 2º: todos ficam em 2º. Quem não tem yurt
-	 * na região não pontua nela.
-	 */
+	// Influência nas 3 regiões (págs. 14-15): o 1º e o 2º em yurts de cada
+	// região ganham votos pelo número de melhorias da coluna daquela região.
+	// Empate em 1º: todos são 1º e não tem 2º. Empate em 2º: todos são 2º.
+	// Quem não tem yurt na região não ganha nada nela.
 	static int votosDeInfluencia(Jogador jogador, Collection<Jogador> todos, Tabuleiro tabuleiro) {
 		int total = 0;
 		for (Regiao regiao : Regiao.values()) {

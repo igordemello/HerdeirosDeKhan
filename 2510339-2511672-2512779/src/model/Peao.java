@@ -1,6 +1,6 @@
 package model;
 
-/**
+/*
  * Peão de um jogador no mapa.
  *
  * Não basta identificar o peão pela cor porque Altani joga com 2 peões. Por isso cada peão tem a cor do dono e um número (1 ou 2).

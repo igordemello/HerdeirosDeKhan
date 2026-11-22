@@ -32,7 +32,7 @@ class TurnoNoMapa {
 	private boolean khanUsado = false;
 	private boolean habilidadeUsada = false;
 
-	/** Zera tudo e anota onde estão os peões do jogador no começo do turno. */
+	// Zera tudo e anota onde estão os peões do jogador no começo do turno.
 	void iniciar(Jogador jogador, Tabuleiro tabuleiro) {
 		if (jogador == null || tabuleiro == null) {
 			throw new IllegalArgumentException("Jogador e tabuleiro não podem ser nulos");
@@ -53,7 +53,7 @@ class TurnoNoMapa {
 		}
 	}
 
-	// ------------------------------------------------------------- paradas
+	// paradas
 
 	void registrarMovimento(int numeroPeao, Collection<String> visitadas) {
 		if (!podeUsarPeao(numeroPeao)) {
@@ -72,7 +72,7 @@ class TurnoNoMapa {
 		return peaoDoTurno == null || peaoDoTurno == numeroPeao;
 	}
 
-	/** Paradas que servem de base para as ações agora. */
+	// Paradas que servem de base para as ações agora.
 	Set<String> getParadasDasAcoes() {
 		if (peaoDoTurno != null) {
 			return Collections.unmodifiableSet(paradasPorPeao.get(peaoDoTurno));
@@ -98,10 +98,8 @@ class TurnoNoMapa {
 		return false;
 	}
 
-	/**
-	 * Chamado quando uma ação usa uma dessas paradas. Se o peão do turno ainda
-	 * não foi escolhido, fica sendo o primeiro peão que passou por uma delas.
-	 */
+	// Chamado quando uma ação usa uma dessas paradas. Se o peão do turno ainda
+	// não foi escolhido, fica sendo o primeiro peão que passou por uma delas.
 	void usarBase(Collection<Parada> paradas) {
 		if (peaoDoTurno != null) {
 			return;
@@ -118,7 +116,7 @@ class TurnoNoMapa {
 		}
 	}
 
-	// ------------------------------------------------------- punhos e ataques
+	// punhos e ataques
 
 	int getPunhosUsados() {
 		return punhosUsados;
@@ -138,7 +136,7 @@ class TurnoNoMapa {
 		tesourosTomados.put(cidade, tomados == null ? 1 : tomados + 1);
 	}
 
-	// --------------------------------------------------- Khan e habilidade
+	// Khan e habilidade
 
 	boolean khanUsado() {
 		return khanUsado;
