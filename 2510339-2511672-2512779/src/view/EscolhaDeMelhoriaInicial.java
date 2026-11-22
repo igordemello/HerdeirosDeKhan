@@ -30,7 +30,7 @@ final class EscolhaDeMelhoriaInicial extends JDialog {
 		super(SwingUtilities.getWindowAncestor(origem), "Jochi: melhoria inicial", ModalityType.APPLICATION_MODAL);
 		this.jogo = jogo;
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE); // a escolha é obrigatória
-		JLabel texto = new JLabel("<html>" + cor + " (Jochi): clique na melhoria que vai para a sua coluna branca."
+		JLabel texto = new JLabel("<html>" + jogo.getNome(cor) + " (Jochi): clique na melhoria que vai para a sua coluna branca."
 				+ "<br>A outra volta para a pilha.</html>");
 		texto.setBorder(BorderFactory.createEmptyBorder(10, 12, 4, 12));
 		JPanel pecas = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 10));

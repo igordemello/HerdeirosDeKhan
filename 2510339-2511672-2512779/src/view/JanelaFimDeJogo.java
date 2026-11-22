@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
@@ -35,7 +36,8 @@ public class JanelaFimDeJogo extends JDialog {
 				+ "<th>Kurultai</th><th>Influência</th><th>Conselheiro<br>secreto</th><th>Total</th>"
 				+ "<th>Tesouros</th></tr>");
 		for (String cor : jogo.getCores()) {
-			tabela.append("<tr><td>").append(cor).append(" (").append(jogo.getHerdeiro(cor)).append(")</td>")
+			tabela.append("<tr><td><b>").append(jogo.getNome(cor)).append("</b> (").append(jogo.getHerdeiro(cor))
+					.append(")</td>")
 					.append(celula(jogo.getVotos(cor))).append(celula(jogo.getVotosDeInfluencia(cor)))
 					.append(celula(jogo.getVotosDoConselheiroSecreto(cor)))
 					.append("<td align='center'><b>").append(jogo.getVotosFinais(cor)).append("</b></td>")
@@ -46,7 +48,10 @@ public class JanelaFimDeJogo extends JDialog {
 		votos.setFont(votos.getFont().deriveFont(15f));
 		votos.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
 
-		List<String> vencedores = jogo.getVencedores();
+		List<String> vencedores = new ArrayList<String>();
+		for (String cor : jogo.getVencedores()) {
+			vencedores.add(jogo.getNome(cor));
+		}
 		JLabel resultado = new JLabel((vencedores.size() == 1 ? "Vencedor: " : "Vitória compartilhada: ")
 				+ String.join(", ", vencedores));
 		resultado.setFont(resultado.getFont().deriveFont(Font.BOLD, 22f));

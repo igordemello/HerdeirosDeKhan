@@ -88,11 +88,12 @@ class JanelaCartas extends JDialog implements ObservadorIF {
 	void atualizar() {
 		conteudo.removeAll();
 		String cor = cor();
-		setTitle("Cartas de conselheiro - " + cor);
+		String nome = jogo.getNome(cor);
+		setTitle("Cartas de conselheiro - " + nome);
 
 		String secreto = jogo.getConselheiroSecreto(cor);
 		if (secreto == null) {
-			adicionarTitulo(cor + ": escolha o seu conselheiro secreto (os outros jogadores não devem olhar)");
+			adicionarTitulo(nome + ": escolha o seu conselheiro secreto (os outros jogadores não devem olhar)");
 			JPanel linha = linhaDeCartas();
 			for (String tipo : jogo.getCartasSecretasParaEscolher(cor)) {
 				JPanel coluna = new JPanel(new BorderLayout(0, 4));
@@ -104,7 +105,7 @@ class JanelaCartas extends JDialog implements ObservadorIF {
 			}
 			conteudo.add(linha);
 		} else if (corFixa == null) {
-			adicionarTitulo("Conselheiro secreto de " + cor + " (só ele deve olhar)");
+			adicionarTitulo("Conselheiro secreto de " + nome + " (só ele deve olhar)");
 			int progresso = jogo.getProgressoConselheiroSecreto(cor);
 			int votos = jogo.getVotosDoConselheiroSecreto(cor);
 			JPanel linha = linhaDeCartas();
@@ -126,7 +127,7 @@ class JanelaCartas extends JDialog implements ObservadorIF {
 			conteudo.add(linha);
 
 			List<String> minhas = jogo.getCartasAbertasConquistadas(cor);
-			adicionarTitulo("Cartas abertas conquistadas por " + cor + ": " + minhas.size());
+			adicionarTitulo("Cartas abertas conquistadas por " + nome + ": " + minhas.size());
 			JPanel linhaMinhas = linhaDeCartas();
 			for (String tipo : minhas) {
 				linhaMinhas.add(cartaAberta(tipo, "Conquistada: +1 voto"));

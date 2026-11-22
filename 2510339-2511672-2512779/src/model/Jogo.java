@@ -197,6 +197,17 @@ public class Jogo implements ObservadoIF {
 		return nomes;
 	}
 
+	// nome que o jogador digitou (ou a cor, se deixou em branco)
+	public String getNome(String cor) {
+		return jogador(cor).getNome();
+	}
+
+	// Preparação, não é jogada: por isso não trava o botão de salvar.
+	public void definirNome(String cor, String nome) {
+		jogador(cor).setNome(nome);
+		avisarObservadores();
+	}
+
 	// Herdeiro do jogador da cor dada (ex.: "Tolui"); usado pela View para achar a imagem.
 	public String getHerdeiro(String cor) {
 		return jogador(cor).getHerdeiro().getNome();

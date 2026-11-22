@@ -57,6 +57,39 @@ final class ArquivoPartida {
 		return sb.toString();
 	}
 
+	// O arquivo tem que ser ASCII puro, mas o nome do jogador pode ter acento.
+	// Então letra fora do ASCII (e a própria barra invertida) vira o código
+	// dela em hexa, igual ao escape unicode do Java (ã fica barra + u00e3).
+	static String paraAscii(String texto) {
+		StringBuilder sb = new StringBuilder();
+		for (char c : texto.toCharArray()) {
+			if (c < 128 && c != '\\' && c >= ' ') {
+				sb.append(c);
+			} else {
+				sb.append(String.format("\\u%04x", (int) c));
+			}
+		}
+		return sb.toString();
+	}
+
+	static String deAscii(String texto) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < texto.length(); i++) {
+			char c = texto.charAt(i);
+			if (c == '\\' && i + 6 <= texto.length() && texto.charAt(i + 1) == 'u') {
+				try {
+					sb.append((char) Integer.parseInt(texto.substring(i + 2, i + 6), 16));
+					i += 5;
+					continue;
+				} catch (NumberFormatException e) {
+					// não era um código de verdade: deixa como está
+				}
+			}
+			sb.append(c);
+		}
+		return sb.toString();
+	}
+
 	// leitura
 
 	// Lê o arquivo inteiro e monta seção -> (chave -> valor). Se não for um

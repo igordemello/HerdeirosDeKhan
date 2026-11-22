@@ -68,7 +68,7 @@ class JanelaEntregas extends JDialog implements ObservadorIF {
 	void atualizar() {
 		conteudo.removeAll();
 		String cor = jogo.getJogadorDaVez();
-		setTitle("Entregar tesouros - vez de " + cor);
+		setTitle("Entregar tesouros - vez de " + jogo.getNome(cor));
 
 		titulo("Seus tesouros");
 		JPanel meus = linha();

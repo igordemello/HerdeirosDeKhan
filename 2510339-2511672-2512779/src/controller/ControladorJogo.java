@@ -61,7 +61,7 @@ public class ControladorJogo {
 		janela.setVisible(true);
 		janela.escolherConselheirosSecretos();
 		String aviso = avisoDoFim();
-		janela.mostrarMensagem("Vez de " + jogo.getJogadorDaVez() + "." + (aviso.isEmpty() ? "" : " " + aviso));
+		janela.mostrarMensagem(textoDaVez() + (aviso.isEmpty() ? "" : " " + aviso));
 	}
 
 	// ações no mapa
@@ -196,9 +196,15 @@ public class ControladorJogo {
 		if (jogo.partidaAcabou()) {
 			encerrarPartida();
 		} else {
-			janela.mostrarMensagem(avisoDoFim());
+			String aviso = avisoDoFim();
+			janela.mostrarMensagem(textoDaVez() + (aviso.isEmpty() ? "" : " " + aviso));
 		}
-	}
+		}
+
+		private String textoDaVez() {
+			String cor = jogo.getJogadorDaVez();
+			return "Vez de " + jogo.getNome(cor) + " (" + jogo.getHerdeiro(cor) + ").";
+		}
 
 	private String avisoDoFim() {
 		int turnos = jogo.getTurnosAteOFim();

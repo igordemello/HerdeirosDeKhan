@@ -101,12 +101,12 @@ class JanelaMercado extends JDialog implements ObservadorIF {
 		}
 		String cor = jogo.getJogadorDaVez();
 		if (modoGratis()) {
-			titulo.setText(cor + " completou uma linha: escolha uma melhoria grátis para a coluna branca");
+			titulo.setText(jogo.getNome(cor) + " completou uma linha: escolha uma melhoria grátis para a coluna branca");
 			situacao.setText("A melhoria grátis pode ser de qualquer cor.");
 			botaoComprar.setText("Pegar grátis");
 			botaoComprar.setEnabled(selecionada != NENHUMA);
 		} else {
-			titulo.setText("Melhorias disponíveis - vez de " + cor);
+			titulo.setText("Melhorias disponíveis - vez de " + jogo.getNome(cor));
 			situacao.setText("Moedas disponíveis: " + jogo.getTributoDisponivelDaVez("MOEDA") + " (cada melhoria custa "
 					+ jogo.getPrecoMelhoria() + "). A peça vai para a coluna da sua cor e só vale a partir do próximo turno.");
 			botaoComprar.setText("Comprar");

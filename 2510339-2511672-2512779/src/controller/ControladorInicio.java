@@ -77,7 +77,11 @@ public class ControladorInicio {
 				janelaJogadores.mostrarAviso("Escolha pelo menos 2 jogadores.");
 				return;
 			}
-			Jogo.novaPartida(cores);
+			List<String> nomes = janelaJogadores.getNomesEscolhidos();
+			Jogo jogo = Jogo.novaPartida(cores);
+			for (int i = 0; i < cores.size(); i++) {
+				jogo.definirNome(cores.get(i), nomes.get(i));
+			}
 			ControladorJogo controlador = new ControladorJogo(new JanelaPrincipal());
 			janelaJogadores.dispose();
 			controlador.iniciar();

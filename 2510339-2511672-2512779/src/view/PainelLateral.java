@@ -274,14 +274,23 @@ public class PainelLateral extends JPanel implements ObservadorIF {
 		FontMetrics fm = g2.getFontMetrics();
 		y += fm.getAscent();
 		g2.drawString("Jogador da vez", MARGEM, y);
+		// o nome pode ser comprido: diminui a letra até caber do lado do botão Salvar
+		String nome = jogo.getNome(cor);
 		g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 30));
-		fm = g2.getFontMetrics();
-		y += fm.getAscent() + 2;
-		g2.drawString(cor, MARGEM, y);
+		int subida = g2.getFontMetrics().getAscent(); // a altura da linha não muda com o tamanho
+		int tamanho = 30;
+		do {
+			g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, tamanho));
+			fm = g2.getFontMetrics();
+			tamanho -= 2;
+		} while (fm.stringWidth(nome) > LARGURA - 2 * MARGEM - 90 && tamanho > 14);
+		y += subida + 2;
+		g2.drawString(nome, MARGEM, y);
 		g2.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 16));
 		fm = g2.getFontMetrics();
 		y += fm.getHeight() + 2;
-		g2.drawString("Herdeiro: " + jogo.getHerdeiro(cor), MARGEM, y);
+		g2.drawString("Herdeiro: " + jogo.getHerdeiro(cor) + " (" + cor.charAt(0) + cor.substring(1).toLowerCase() + ")",
+				MARGEM, y);
 		y += 14;
 
 		// tabuleiro do jogador

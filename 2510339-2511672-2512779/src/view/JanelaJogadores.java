@@ -22,6 +22,10 @@ import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.PlainDocument;
 
 import model.Jogo;
 
@@ -37,6 +41,8 @@ public class JanelaJogadores extends JFrame {
 	private final JButton botaoJogar = new JButton("Jogar");
 	private final JLabel aviso = new JLabel(" ");
 	private final Map<String, JCheckBox> caixas = new HashMap<String, JCheckBox>();
+	// campo do nome de cada cor
+	private final Map<String, JTextField> camposNome = new HashMap<String, JTextField>();
 	// Cores marcadas, na ordem em que foram marcadas.
 	private final List<String> escolhidas = new ArrayList<String>();
 
@@ -44,8 +50,8 @@ public class JanelaJogadores extends JFrame {
 		super("Herdeiros do Khan - Jogadores");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		JLabel instrucao = new JLabel("<html>Marque de 2 a 5 herdeiros <b>na ordem em que vão jogar</b>."
-				+ " Começa quem tiver mais descendentes.</html>");
+		JLabel instrucao = new JLabel("<html>Marque de 2 a 5 herdeiros <b>na ordem em que vão jogar</b> e digite"
+				+ " o nome de cada jogador. Começa quem tiver mais descendentes.</html>");
 		instrucao.setBorder(BorderFactory.createEmptyBorder(10, 12, 6, 12));
 
 		JPanel linhas = new JPanel(new GridLayout(0, 1, 0, 6));
@@ -57,9 +63,19 @@ public class JanelaJogadores extends JFrame {
 			caixa.addItemListener(new TratadorMarcacao(cor));
 			caixas.put(cor, caixa);
 
+			JTextField campo = new JTextField(14);
+			campo.setDocument(new LimiteDeTamanho());
+			camposNome.put(cor, campo);
+			JPanel nome = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+			nome.add(new JLabel("Nome:"));
+			nome.add(campo);
+			JPanel direita = new JPanel(new GridLayout(2, 1));
+			direita.add(caixa);
+			direita.add(nome);
+
 			JPanel linha = new JPanel(new BorderLayout(12, 0));
 			linha.add(new Cartela(herdeiro), BorderLayout.WEST);
-			linha.add(caixa, BorderLayout.CENTER);
+			linha.add(direita, BorderLayout.CENTER);
 			linhas.add(linha);
 		}
 		atualizarTextos();
@@ -84,6 +100,15 @@ public class JanelaJogadores extends JFrame {
 
 	public List<String> getCoresEscolhidas() {
 		return new ArrayList<String>(escolhidas);
+	}
+
+	// mesma ordem de getCoresEscolhidas; nome em branco vira "" (o Model usa a cor)
+	public List<String> getNomesEscolhidos() {
+		List<String> nomes = new ArrayList<String>();
+		for (String cor : escolhidas) {
+			nomes.add(camposNome.get(cor).getText().trim());
+		}
+		return nomes;
 	}
 
 	public void mostrarAviso(String texto) {
@@ -116,6 +141,19 @@ public class JanelaJogadores extends JFrame {
 			}
 			atualizarTextos();
 			aviso.setText(" ");
+		}
+	}
+
+	// não deixa digitar mais que o tamanho máximo do nome
+	private static class LimiteDeTamanho extends PlainDocument {
+		private static final long serialVersionUID = 1L;
+		private static final int MAXIMO = 20;
+
+		@Override
+		public void insertString(int pos, String texto, AttributeSet atributos) throws BadLocationException {
+			if (texto != null && getLength() + texto.length() <= MAXIMO) {
+				super.insertString(pos, texto, atributos);
+			}
 		}
 	}
 

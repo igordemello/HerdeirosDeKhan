@@ -18,8 +18,12 @@ class Jogador {
 	static final int FICHAS_ATIVACAO_INICIAIS = TabuleiroJogador.FICHAS_ATIVACAO;
 	static final int CARTAS_SECRETAS_INICIAIS = 2;
 
+	static final int TAMANHO_MAXIMO_DO_NOME = 20;
+
 	private final Cor cor;
 	private final Herdeiro herdeiro;
+	// nome digitado na escolha dos jogadores; se ficar em branco, é a cor ("Azul")
+	private String nome;
 
 	private int yurtsDisponiveis = YURTS_INICIAIS;
 	private final TabuleiroJogador tabuleiro;
@@ -48,6 +52,7 @@ class Jogador {
 		}
 		this.cor = cor;
 		this.herdeiro = cor.getHerdeiro();
+		this.nome = cor.name().charAt(0) + cor.name().substring(1).toLowerCase();
 		this.tabuleiro = new TabuleiroJogador(herdeiro);
 		for (TipoTributo t : TipoTributo.values()) {
 			tributos.put(t, 0);
@@ -63,6 +68,19 @@ class Jogador {
 
 	Herdeiro getHerdeiro() {
 		return herdeiro;
+	}
+
+	String getNome() {
+		return nome;
+	}
+
+	// nome em branco não muda nada (fica o anterior); nome comprido é cortado
+	void setNome(String novo) {
+		if (novo == null || novo.trim().isEmpty()) {
+			return;
+		}
+		novo = novo.trim();
+		nome = novo.length() > TAMANHO_MAXIMO_DO_NOME ? novo.substring(0, TAMANHO_MAXIMO_DO_NOME) : novo;
 	}
 
 	// tributos
@@ -261,6 +279,7 @@ class Jogador {
 	// seção). Só vai nome de enum e número, pro arquivo ficar em ASCII.
 	void salvar(PrintWriter saida) {
 		ArquivoPartida.linha(saida, "herdeiro", herdeiro.name());
+		ArquivoPartida.linha(saida, "nome", ArquivoPartida.paraAscii(nome));
 		List<String> lista = new ArrayList<String>();
 		for (TipoTributo t : TipoTributo.values()) {
 			lista.add(t.name() + ":" + tributos.get(t));
@@ -297,7 +316,10 @@ class Jogador {
 	void carregar(Map<String, String> secao, DistribuidorCartas cartas) {
 		if (!ArquivoPartida.valor(secao, "herdeiro").equals(herdeiro.name())) {
 			throw new IllegalArgumentException("O herdeiro salvo não é o da cor " + cor);
-		}
+			}
+			if (secao.containsKey("nome")) { // saves antigos não têm o nome
+				setNome(ArquivoPartida.deAscii(secao.get("nome")));
+			}
 		Map<String, Integer> pares = ArquivoPartida.pares(secao, "tributos");
 		for (TipoTributo t : TipoTributo.values()) {
 			tributos.put(t, naoNegativo(pares, t.name()));
